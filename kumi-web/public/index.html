@@ -11,19 +11,24 @@
             --bg-canvas: #f8fafc;
             --bg-card: #ffffff;
             --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
-            --border-subtle: #e2e8f0;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border-subtle: #cbd5e1;
+            
+            /* Colores institucionales y vivos */
             --emerald-main: #10b981;
             --emerald-soft: #ecfdf5;
             --emerald-dark: #047857;
-            --accent-blue: #0284c7;
+            
+            --blue-main: #0284c7;
+            --blue-soft: #f0f9ff;
+            --blue-border: #bae6fd;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-canvas); color: var(--text-primary); height: 100vh; display: flex; overflow: hidden; }
 
-        /* Panel Lateral - Entorno Institucional */
+        /* Panel Lateral */
         aside {
             width: 310px;
             background-color: var(--bg-card);
@@ -32,7 +37,8 @@
             flex-direction: column;
             padding: 24px 20px;
             justify-content: space-between;
-            shrink: 0;
+            flex-shrink: 0;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
         }
 
         .brand-header {
@@ -53,19 +59,19 @@
             justify-content: center;
             font-weight: 700;
             font-size: 20px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
         }
 
         .brand-title h1 { font-size: 17px; font-weight: 700; color: var(--text-primary); }
-        .brand-title p { font-size: 12px; color: var(--emerald-dark); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .brand-title p { font-size: 12px; color: var(--emerald-dark); font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .status-dot { width: 8px; height: 8px; background-color: var(--emerald-main); border-radius: 50%; animation: pulse 2s infinite; }
 
         .btn-session {
-            background-color: var(--emerald-main);
+            background: linear-gradient(135deg, var(--emerald-main), #059669);
             color: white;
             border: none;
             padding: 12px 16px;
-            border-radius: 10px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
@@ -74,10 +80,10 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
             width: 100%;
         }
-        .btn-session:hover { background-color: var(--emerald-dark); }
+        .btn-session:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); }
 
         .pfa-notice {
             background-color: var(--emerald-soft);
@@ -91,6 +97,7 @@
 
         .helpline-box {
             background-color: #f1f5f9;
+            border: 1px solid var(--border-subtle);
             border-radius: 12px;
             padding: 14px;
             margin-top: auto;
@@ -98,7 +105,7 @@
         .helpline-box h4 { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
         .helpline-item { font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 4px; }
 
-        /* Área Principal de Contenido */
+        /* Área Principal */
         main { flex: 1; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-canvas); }
 
         header {
@@ -109,9 +116,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
         header h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-        .tag-beta { background-color: #e0f2fe; color: var(--accent-blue); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+        .tag-beta { background-color: #e0f2fe; color: var(--blue-main); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid #bae6fd; }
 
         #session-container {
             flex: 1;
@@ -119,36 +127,41 @@
             padding: 32px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
             max-width: 840px;
             width: 100%;
             margin: 0 auto;
         }
 
-        /* Bloques de Orientación (Reemplaza las burbujas de chat) */
+        /* Bloques de Interacción con profundidad y color equilibrado */
         .session-block {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
             padding: 20px 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             animation: fadeIn 0.3s ease-out;
         }
 
+        /* Mensaje del Usuario: Tonalidad azul elegante y equilibrada */
         .session-block.user-entry {
-            background-color: #f8fafc;
-            border-left: 4px solid var(--emerald-main);
+            background-color: var(--blue-soft);
+            border: 1px solid var(--blue-border);
+            border-left: 5px solid var(--blue-main);
         }
 
+        /* Mensaje de Kumi: Tonalidad verde esmeralda profesional */
         .session-block.kumi-entry {
-            border-left: 4px solid var(--accent-blue);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-left: 5px solid var(--emerald-main);
         }
 
         .block-header {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .block-author { font-size: 13px; font-weight: 700; color: var(--text-primary); }
@@ -160,7 +173,6 @@
             color: var(--text-secondary);
         }
 
-        /* Indicador de Análisis */
         .analyzing-indicator {
             display: flex;
             align-items: center;
@@ -168,9 +180,10 @@
             font-size: 13px;
             color: var(--text-muted);
             padding: 12px 20px;
+            font-weight: 500;
         }
 
-        /* Barra de Entrada / Expresión */
+        /* Barra de Entrada */
         footer { padding: 24px; background-color: var(--bg-canvas); }
         .input-container {
             max-width: 840px;
@@ -178,11 +191,16 @@
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            padding: 10px 14px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            padding: 10px 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
             display: flex;
             gap: 12px;
             align-items: center;
+            transition: all 0.2s;
+        }
+        .input-container:focus-within {
+            border-color: var(--emerald-main);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.12);
         }
         .input-container textarea {
             flex: 1;
@@ -195,21 +213,24 @@
             color: var(--text-primary);
             background: transparent;
         }
+        
+        /* Botón Enviar con alineación perfecta centrada */
         .btn-send {
-            background-color: var(--emerald-main);
+            background: linear-gradient(135deg, var(--emerald-main), #059669);
             color: white;
             border: none;
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: justify-center;
-            transition: background 0.2s;
-            shrink: 0;
+            justify-content: center; /* Corregido para centrar perfectamente la flecha */
+            transition: all 0.2s;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
         }
-        .btn-send:hover { background-color: var(--emerald-dark); }
+        .btn-send:hover { transform: scale(1.05); background: linear-gradient(135deg, var(--emerald-dark), #047857); }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -317,7 +338,7 @@
             const ind = document.createElement('div');
             ind.id = 'analyzing-indicator';
             ind.className = 'analyzing-indicator';
-            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Kumi está procesando tu mensaje con contención...`;
+            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--emerald-main);"></i> Kumi está procesando tu mensaje con contención...`;
             container.appendChild(ind);
             container.scrollTop = container.scrollHeight;
         }

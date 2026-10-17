@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumi - Asistente de Acompañamiento Emocional</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,31 +11,19 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                        }
+                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
                     }
                 }
             }
         }
     </script>
-    <!-- Font Inter & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
-        @keyframes pulse-subtle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .typing-dot { animation: pulse-subtle 1.4s infinite ease-in-out both; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
@@ -44,123 +31,101 @@
 </head>
 <body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col md:flex-row overflow-hidden">
 
-    <!-- Mobile Sidebar Backdrop -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-20 hidden md:hidden transition-opacity"></div>
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none">
-        <!-- Sidebar Header -->
-        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 font-bold text-lg">
-                    K
-                </div>
-                <div>
-                    <h1 class="font-bold text-base leading-tight">Kumi AI</h1>
-                    <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> En línea
-                    </span>
-                </div>
-            </div>
-            <button id="close-sidebar" class="md:hidden text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 p-2 rounded-lg">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-        </div>
-
-        <!-- New Chat Button -->
-        <div class="p-4">
-            <button onclick="nuevoChat()" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl shadow-sm transition-all active:scale-[0.98]">
-                <i class="fa-solid fa-plus"></i> Nueva Conversación
-            </button>
-        </div>
-
-        <!-- Chat History -->
-        <div class="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-            <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2">Sesión Actual</div>
-            <div id="chat-history-item" class="group flex items-center justify-between p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-sm font-medium cursor-pointer border border-transparent hover:border-emerald-500/30 transition-all">
-                <div class="flex items-center gap-2.5 truncate">
-                    <i class="fa-regular fa-message text-emerald-600 dark:text-emerald-400"></i>
-                    <span class="truncate">Acompañamiento con Kumi</span>
-                </div>
+    <aside class="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col p-4 shrink-0">
+        <div class="flex items-center space-x-3 mb-6">
+            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg">K</div>
+            <div>
+                <h1 class="font-bold text-base">Kumi AI</h1>
+                <span class="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> En línea
+                </span>
             </div>
         </div>
-
-        <!-- Sidebar Footer -->
-        <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <button onclick="toggleDarkMode()" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <i class="fa-solid fa-moon text-slate-500" id="theme-icon"></i> <span id="theme-text">Modo Oscuro</span>
-            </button>
-        </div>
+        <button onclick="nuevoChat()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl transition-all">
+            + Nueva Conversación
+        </button>
     </aside>
 
-    <!-- Main Content Wrapper -->
-    <main class="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
-        
-        <!-- Header -->
-        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between z-10">
-            <div class="flex items-center gap-3">
-                <button id="open-sidebar" class="md:hidden text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-xl">
-                    <i class="fa-solid fa-bars text-lg"></i>
-                </button>
-                <div>
-                    <h2 class="font-bold text-base flex items-center gap-2">
-                        Kumi <span class="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">Apoyo Emocional & PAP</span>
-                    </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Asistente virtual creada para escucharte y guiarte con empatía.</p>
-                </div>
-            </div>
+    <main class="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative">
+        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 flex items-center">
+            <h2 class="font-bold text-base">Kumi - Apoyo Emocional & PAP</h2>
         </header>
 
-        <!-- Chat Container -->
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto">
-            <!-- Dynamic Messages -->
-        </div>
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto"></div>
 
-        <!-- Input Area Footer -->
-        <footer class="p-4 sm:p-6 bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent">
-            <div class="max-w-4xl mx-auto">
-                <form id="chat-form" onsubmit="enviarMensaje(event)" class="relative bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-lg focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition-all flex items-end p-2">
-                    <textarea 
-                        id="user-input" 
-                        rows="1" 
-                        placeholder="Escribe cómo te sientes o platícale a Kumi..." 
-                        class="w-full bg-transparent resize-none border-0 focus:ring-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm sm:text-base p-2.5 max-h-32"
-                        onkeydown="handleKeyDown(event)"
-                        oninput="autoResizeTextarea(this)"
-                    ></textarea>
-                    
-                    <button 
-                        type="submit" 
-                        id="send-button"
-                        class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white rounded-xl w-10 h-10 flex items-center justify-center transition-all shrink-0 m-1 shadow-md shadow-emerald-600/20 active:scale-95"
-                        title="Enviar mensaje"
-                    >
-                        <i class="fa-solid fa-paper-plane text-sm"></i>
-                    </button>
-                </form>
-                <div class="text-center mt-2">
-                    <span class="text-[11px] text-slate-400 dark:text-slate-500">
-                        Kumi ofrece apoyo emocional y primeros auxilios psicológicos. No sustituye la atención médica o psicológica profesional de emergencia.
-                    </span>
-                </div>
-            </div>
+        <footer class="p-4 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+            <form onsubmit="enviarMensaje(event)" class="max-w-4xl mx-auto flex gap-2">
+                <input type="text" id="user-input" placeholder="Escribe tu mensaje a Kumi..." class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button type="submit" id="send-button" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition-all">
+                    Enviar
+                </button>
+            </form>
         </footer>
     </main>
 
-    <!-- JavaScript Application Logic -->
     <script>
         let historialMensajes = [];
-        let isGenerating = false;
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-                updateThemeUI(true);
-            }
-
             nuevoChat();
-
-            document.getElementById('open-sidebar').addEventListener('click', toggleSidebar);
-            document.getElementById('close-sidebar').addEventListener('click', toggleSidebar);
-            document.getElementById('sidebar-backdrop').addEventListener('click', toggleSidebar);
         });
+
+        function nuevoChat() {
+            historialMensajes = [];
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.innerHTML = '';
+            agregarMensajeUI('assistant', '¡Hola! Soy Kumi. Estoy aquí para acompañarte. ¿Cómo te encuentras en este momento?');
+        }
+
+        function agregarMensajeUI(role, texto) {
+            const chatContainer = document.getElementById('chat-container');
+            const isUser = role === 'user';
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white ${isUser ? 'bg-slate-600' : 'bg-emerald-500'}`;
+            avatar.textContent = isUser ? 'Tú' : 'K';
+
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isUser ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'}`;
+            bubble.textContent = texto;
+
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubble);
+            chatContainer.appendChild(wrapper);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function enviarMensaje(event) {
+            event.preventDefault();
+            const input = document.getElementById('user-input');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            input.value = '';
+            agregarMensajeUI('user', texto);
+            historialMensajes.push({ role: 'user', content: texto });
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: historialMensajes })
+                });
+
+                const data = await response.json();
+                if (data.choices && data.choices[0]) {
+                    const respuesta = data.choices[0].message.content;
+                    agregarMensajeUI('assistant', respuesta);
+                    historialMensajes.push({ role: 'assistant', content: respuesta });
+                } else {
+                    agregarMensajeUI('assistant', 'Hubo un inconveniente al recibir la respuesta de Kumi.');
+                }
+            } catch (error) {
+                agregarMensajeUI('assistant', 'Error de conexión con el servidor.');
+            }
+        }
+    </script>
+</body>
+</html>

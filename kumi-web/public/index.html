@@ -1,65 +1,112 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumi - Asistente de Acompañamiento Emocional</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
-                    }
-                }
-            }
-        }
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
-        @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .typing-dot { animation: pulse-subtle 1.4s infinite ease-in-out both; }
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --user-bubble: #10b981;
+            --user-text: #ffffff;
+            --assistant-bubble: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            /* Soporte nativo para modo oscuro si el sistema lo usa */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+
+        /* Sidebar */
+        aside { width: 280px; background-color: var(--bg-card); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; }
+        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .brand-icon { width: 40px; height: 40px; background-color: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
+        .brand-info h1 { font-size: 16px; font-weight: 700; }
+        .brand-info span { font-size: 12px; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: 500; }
+        .dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 1.5s infinite; }
+        
+        .new-chat-btn { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .new-chat-btn:hover { background-color: var(--primary-hover); }
+
+        /* Main Chat Area */
+        main { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; background-color: #f1f5f9; }
+        header { height: 70px; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 0 24px; display: flex; align-items: center; }
+        header h2 { font-size: 16px; font-weight: 700; color: var(--text-main); }
+
+        #chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+
+        /* Messages */
+        .message-wrapper { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+        .message-wrapper.user { flex-direction: row-reverse; }
+        
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: white; flex-shrink: 0; }
+        .avatar.assistant { background-color: var(--primary); }
+        .avatar.user { background-color: #475569; }
+
+        .bubble { max-width: 75%; padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .message-wrapper.user .bubble { background-color: var(--user-bubble); color: var(--user-text); border-top-right-radius: 4px; }
+        .message-wrapper.assistant .bubble { background-color: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-top-left-radius: 4px; }
+
+        /* Footer Input */
+        footer { padding: 20px; background: linear-gradient(to top, #f1f5f9 80%, transparent); }
+        .input-form { max-width: 900px; margin: 0 auto; display: flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .input-form input { flex: 1; border: none; background: transparent; padding: 10px; font-size: 15px; color: var(--text-main); outline: none; }
+        .input-form button { background-color: var(--primary); color: white; border: none; width: 42px; height: 42px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .input-form button:hover { background-color: var(--primary-hover); }
+
+        .disclaimer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            aside { display: none; }
+        }
     </style>
 </head>
-<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col md:flex-row overflow-hidden">
+<body>
 
-    <aside class="w-full md:w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col p-4 shrink-0">
-        <div class="flex items-center space-x-3 mb-6">
-            <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg">K</div>
-            <div>
-                <h1 class="font-bold text-base">Kumi AI</h1>
-                <span class="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> En línea
-                </span>
+    <aside>
+        <div class="brand">
+            <div class="brand-icon">K</div>
+            <div class="brand-info">
+                <h1>Kumi AI</h1>
+                <span><div class="dot"></div> En línea</span>
             </div>
         </div>
-        <button onclick="nuevoChat()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl transition-all">
-            + Nueva Conversación
+        <button onclick="nuevoChat()" class="new-chat-btn">
+            <i class="fa-solid fa-plus"></i> Nueva Conversación
         </button>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 relative">
-        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 flex items-center">
-            <h2 class="font-bold text-base">Kumi - Apoyo Emocional & PAP</h2>
+    <main>
+        <header>
+            <h2>Kumi - Apoyo Emocional & Primeros Auxilios Psicológicos (PAP)</h2>
         </header>
 
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-4xl w-full mx-auto"></div>
+        <div id="chat-container">
+            <!-- Los mensajes se cargan aquí dinámicamente -->
+        </div>
 
-        <footer class="p-4 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
-            <form onsubmit="enviarMensaje(event)" class="max-w-4xl mx-auto flex gap-2">
-                <input type="text" id="user-input" placeholder="Escribe tu mensaje a Kumi..." class="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <button type="submit" id="send-button" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-medium text-sm transition-all">
-                    Enviar
+        <footer>
+            <form onsubmit="enviarMensaje(event)" class="input-form">
+                <input type="text" id="user-input" placeholder="Escribe cómo te sientes o platícale a Kumi..." autocomplete="off">
+                <button type="submit" id="send-button">
+                    <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
+            <div class="disclaimer">
+                Kumi ofrece apoyo emocional y PAP. No sustituye la atención médica o psicológica profesional de emergencia.
+            </div>
         </footer>
     </main>
 
@@ -74,22 +121,24 @@
             historialMensajes = [];
             const chatContainer = document.getElementById('chat-container');
             chatContainer.innerHTML = '';
-            agregarMensajeUI('assistant', '¡Hola! Soy Kumi. Estoy aquí para acompañarte. ¿Cómo te encuentras en este momento?');
+            agregarMensajeUI('assistant', '¡Hola! Soy Kumi. Estoy aquí para acompañarte con empatía. ¿Cómo te encuentras en este momento?');
         }
 
         function agregarMensajeUI(role, texto) {
             const chatContainer = document.getElementById('chat-container');
             const isUser = role === 'user';
+            
             const wrapper = document.createElement('div');
-            wrapper.className = `flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+            wrapper.className = `message-wrapper ${isUser ? 'user' : 'assistant'}`;
 
             const avatar = document.createElement('div');
-            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white ${isUser ? 'bg-slate-600' : 'bg-emerald-500'}`;
+            avatar.className = `avatar ${isUser ? 'user' : 'assistant'}`;
             avatar.textContent = isUser ? 'Tú' : 'K';
 
             const bubble = document.createElement('div');
-            bubble.className = `max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isUser ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'}`;
-            bubble.textContent = texto;
+            bubble.className = 'bubble';
+            // Formatear saltos de línea de forma segura
+            bubble.innerHTML = texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
 
             wrapper.appendChild(avatar);
             wrapper.appendChild(bubble);
@@ -120,7 +169,7 @@
                     agregarMensajeUI('assistant', respuesta);
                     historialMensajes.push({ role: 'assistant', content: respuesta });
                 } else {
-                    agregarMensajeUI('assistant', 'Hubo un inconveniente al recibir la respuesta de Kumi.');
+                    agregarMensajeUI('assistant', 'Lo siento, hubo un inconveniente al procesar la respuesta.');
                 }
             } catch (error) {
                 agregarMensajeUI('assistant', 'Error de conexión con el servidor.');

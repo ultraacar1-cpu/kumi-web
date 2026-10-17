@@ -3,278 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kumi - Asistente de Acompañamiento Emocional (Beta)</title>
+    <title>Kumi - Plataforma de Acompañamiento Emocional & PAP</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-main: #f8fafc;
+            --bg-canvas: #f8fafc;
             --bg-card: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --primary: #10b981;
-            --primary-hover: #059669;
-            --user-bubble: #10b981;
-            --user-text: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-subtle: #e2e8f0;
+            --emerald-main: #10b981;
+            --emerald-soft: #ecfdf5;
+            --emerald-dark: #047857;
+            --accent-blue: #0284c7;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+        body { background-color: var(--bg-canvas); color: var(--text-primary); height: 100vh; display: flex; overflow: hidden; }
 
-        /* Sidebar */
-        aside { width: 280px; background-color: var(--bg-card); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; }
-        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-        .brand-icon { width: 40px; height: 40px; background-color: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25); }
-        .brand-info h1 { font-size: 16px; font-weight: 700; }
-        .brand-info span { font-size: 12px; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: 500; }
-        .dot { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; animation: pulse 1.5s infinite; }
-        
-        /* Botón con animación de click */
-        .btn-animated {
-            background-color: var(--primary);
+        /* Panel Lateral - Entorno Institucional */
+        aside {
+            width: 310px;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            justify-content: space-between;
+            shrink: 0;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .brand-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--emerald-main), #06b6d4);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .brand-title h1 { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+        .brand-title p { font-size: 12px; color: var(--emerald-dark); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 8px; height: 8px; background-color: var(--emerald-main); border-radius: 50%; animation: pulse 2s infinite; }
+
+        .btn-session {
+            background-color: var(--emerald-main);
             color: white;
             border: none;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
             font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
             box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
-        }
-        .btn-animated:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        .btn-animated:active:not(:disabled) {
-            transform: scale(0.96);
-        }
-        .btn-animated:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Main Chat Area */
-        main { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; background-color: #f1f5f9; }
-        header { height: 70px; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 0 24px; display: flex; align-items: center; }
-        header h2 { font-size: 16px; font-weight: 700; color: var(--text-main); }
-
-        #chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
-
-        /* Mensajes y Animación Fade-In-Up */
-        .message-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
             width: 100%;
-            animation: fadeInUp 0.35s ease-out forwards;
         }
-        .message-wrapper.user { flex-direction: row-reverse; }
-        
-        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: white; flex-shrink: 0; }
-        .avatar.assistant { background-color: var(--primary); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2); }
-        .avatar.user { background-color: #475569; }
+        .btn-session:hover { background-color: var(--emerald-dark); }
 
-        .bubble { max-width: 75%; padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .message-wrapper.user .bubble { background-color: var(--user-bubble); color: var(--user-text); border-top-right-radius: 4px; }
-        .message-wrapper.assistant .bubble { background-color: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-top-left-radius: 4px; }
-
-        /* Typing Indicator (Escribiendo...) */
-        .typing-dots { display: flex; align-items: center; gap: 4px; padding: 12px 16px; }
-        .dot-bounce {
-            width: 7px;
-            height: 7px;
-            background-color: #94a3b8;
-            border-radius: 50%;
-            animation: dotBounce 1.4s infinite ease-in-out both;
+        .pfa-notice {
+            background-color: var(--emerald-soft);
+            border: 1px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 20px;
         }
-        .dot-bounce:nth-child(1) { animation-delay: -0.32s; }
-        .dot-bounce:nth-child(2) { animation-delay: -0.16s; }
+        .pfa-notice h3 { font-size: 12px; font-weight: 700; color: var(--emerald-dark); text-transform: uppercase; margin-bottom: 6px; }
+        .pfa-notice p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 
-        /* Footer Input */
-        footer { padding: 20px; background: linear-gradient(to top, #f1f5f9 80%, transparent); }
-        .input-form { max-width: 900px; margin: 0 auto; display: flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: border-color 0.2s, box-shadow 0.2s; }
-        .input-form:focus-within { border-color: var(--primary); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15); }
-        .input-form input { flex: 1; border: none; background: transparent; padding: 10px; font-size: 15px; color: var(--text-main); outline: none; }
-        .input-form button { width: 42px; height: 42px; border-radius: 10px; padding: 0; }
-
-        .disclaimer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
-
-        /* Keyframe Animations */
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .helpline-box {
+            background-color: #f1f5f9;
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: auto;
         }
+        .helpline-box h4 { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+        .helpline-item { font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 4px; }
 
-        @keyframes dotBounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+        /* Área Principal de Contenido */
+        main { flex: 1; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-canvas); }
+
+        header {
+            height: 64px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        header h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+        .tag-beta { background-color: #e0f2fe; color: var(--accent-blue); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+
+        #session-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 840px;
+            width: 100%;
+            margin: 0 auto;
         }
 
-        @media (max-width: 768px) {
-            aside { display: none; }
+        /* Bloques de Orientación (Reemplaza las burbujas de chat) */
+        .session-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            animation: fadeIn 0.3s ease-out;
         }
+
+        .session-block.user-entry {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--emerald-main);
+        }
+
+        .session-block.kumi-entry {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .block-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .block-author { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+        .block-role { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+
+        .block-body {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Indicador de Análisis */
+        .analyzing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 12px 20px;
+        }
+
+        /* Barra de Entrada / Expresión */
+        footer { padding: 24px; background-color: var(--bg-canvas); }
+        .input-container {
+            max-width: 840px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .input-container textarea {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            height: 24px;
+            max-height: 120px;
+            font-size: 15px;
+            color: var(--text-primary);
+            background: transparent;
+        }
+        .btn-send {
+            background-color: var(--emerald-main);
+            color: white;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: justify-center;
+            transition: background 0.2s;
+            shrink: 0;
+        }
+        .btn-send:hover { background-color: var(--emerald-dark); }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) { aside { display: none; } }
     </style>
 </head>
 <body>
 
     <aside>
-        <div class="brand">
-            <div class="brand-icon">K</div>
-            <div class="brand-info">
-                <h1>Kumi AI</h1>
-                <span><div class="dot"></div> En línea</span>
+        <div>
+            <div class="brand-header">
+                <div class="brand-avatar">K</div>
+                <div class="brand-title">
+                    <h1>Kumi AI</h1>
+                    <p><span class="status-dot"></span> Módulo PAP Activo</p>
+                </div>
+            </div>
+
+            <button onclick="reiniciarSesion()" class="btn-session">
+                <i class="fa-solid fa-rotate-left"></i> Nueva Sesión
+            </button>
+
+            <div class="pfa-notice">
+                <h3>Primeros Auxilios Psicológicos</h3>
+                <p>Este entorno proporciona escucha reflexiva, contención emocional y pautas breves de autorregulación.</p>
             </div>
         </div>
-        <button onclick="nuevoChat()" class="btn-animated">
-            <i class="fa-solid fa-plus"></i> Nueva Conversación
-        </button>
+
+        <div class="helpline-box">
+            <h4>Líneas Nacionales de Crisis</h4>
+            <div class="helpline-item"><span>Línea Salud Mental:</span> <span>106</span></div>
+            <div class="helpline-item"><span>Atención Emergencias:</span> <span>123</span></div>
+        </div>
     </aside>
 
     <main>
         <header>
-            <h2>Kumi - Apoyo Emocional & Primeros Auxilios Psicológicos (PAP)</h2>
+            <h2>Espacio de Acompañamiento y Escucha Emocional</h2>
+            <span class="tag-beta">Versión Beta 2</span>
         </header>
 
-        <div id="chat-container"></div>
+        <div id="session-container"></div>
 
         <footer>
-            <form onsubmit="enviarMensaje(event)" class="input-form">
-                <input type="text" id="user-input" placeholder="Escribe cómo te sientes o platícale a Kumi..." autocomplete="off">
-                <button type="submit" id="send-button" class="btn-animated">
-                    <i class="fa-solid fa-paper-plane"></i>
+            <form onsubmit="enviarEntrada(event)" class="input-container">
+                <textarea id="user-input" placeholder="Escribe aquí lo que estás experimentando o cómo te sientes hoy..." rows="1" oninput="autoResize(this)"></textarea>
+                <button type="submit" id="send-button" class="btn-send">
+                    <i class="fa-solid fa-arrow-up"></i>
                 </button>
             </form>
-            <div class="disclaimer">
-                Kumi ofrece apoyo emocional y PAP. No sustituye la atención médica o psicológica profesional de emergencia.
-            </div>
         </footer>
     </main>
 
     <script>
-        let historialMensajes = [];
-        let isGenerating = false;
+        let historialSesion = [];
+        let isProcessing = false;
 
         window.addEventListener('DOMContentLoaded', () => {
-            nuevoChat();
+            reiniciarSesion();
         });
 
-        function nuevoChat() {
-            historialMensajes = [];
-            const chatContainer = document.getElementById('chat-container');
-            chatContainer.innerHTML = '';
-            agregarMensajeUI('assistant', '¡Hola! Soy Kumi. Estoy aquí para acompañarte con empatía. ¿Cómo te encuentras en este momento?');
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
         }
 
-        function agregarMensajeUI(role, texto) {
-            const chatContainer = document.getElementById('chat-container');
-            const isUser = role === 'user';
+        function reiniciarSesion() {
+            historialSesion = [];
+            const container = document.getElementById('session-container');
+            container.innerHTML = '';
             
-            const wrapper = document.createElement('div');
-            wrapper.className = `message-wrapper ${isUser ? 'user' : 'assistant'}`;
-
-            const avatar = document.createElement('div');
-            avatar.className = `avatar ${isUser ? 'user' : 'assistant'}`;
-            avatar.textContent = isUser ? 'Tú' : 'K';
-
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble';
-            bubble.innerHTML = texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-
-            wrapper.appendChild(avatar);
-            wrapper.appendChild(bubble);
-            chatContainer.appendChild(wrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            agregarBloque('kumi', 'Bienvenido/a a este espacio de escucha. Soy **Kumi**, una asistente diseñada para brindarte orientación inicial y Primeros Auxilios Psicológicos (PAP).\n\n¿Qué pensamientos o emociones quisieras compartir en este momento?');
         }
 
-        function mostrarIndicadorEscribiendo() {
-            const chatContainer = document.getElementById('chat-container');
-            const wrapper = document.createElement('div');
-            wrapper.id = 'typing-indicator';
-            wrapper.className = 'message-wrapper assistant';
+        function agregarBloque(autor, texto) {
+            const container = document.getElementById('session-container');
+            const isUser = autor === 'user';
 
-            const avatar = document.createElement('div');
-            avatar.className = 'avatar assistant';
-            avatar.textContent = 'K';
+            const block = document.createElement('div');
+            block.className = `session-block ${isUser ? 'user-entry' : 'kumi-entry'}`;
 
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble';
-            bubble.innerHTML = `
-                <div class="typing-dots">
-                    <div class="dot-bounce"></div>
-                    <div class="dot-bounce"></div>
-                    <div class="dot-bounce"></div>
-                </div>
+            const header = document.createElement('div');
+            header.className = 'block-header';
+            header.innerHTML = `
+                <span class="block-author">${isUser ? 'Tu Registro' : 'Orientación de Kumi'}</span>
+                <span class="block-role">• ${isUser ? 'Usuario' : 'Asistente PAP'}</span>
             `;
 
-            wrapper.appendChild(avatar);
-            wrapper.appendChild(bubble);
-            chatContainer.appendChild(wrapper);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            const body = document.createElement('div');
+            body.className = 'block-body';
+            body.innerHTML = texto
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            block.appendChild(header);
+            block.appendChild(body);
+            container.appendChild(block);
+            container.scrollTop = container.scrollHeight;
         }
 
-        function ocultarIndicadorEscribiendo() {
-            const indicator = document.getElementById('typing-indicator');
-            if (indicator) indicator.remove();
+        function mostrarIndicador() {
+            const container = document.getElementById('session-container');
+            const ind = document.createElement('div');
+            ind.id = 'analyzing-indicator';
+            ind.className = 'analyzing-indicator';
+            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Kumi está procesando tu mensaje con contención...`;
+            container.appendChild(ind);
+            container.scrollTop = container.scrollHeight;
         }
 
-        async function enviarMensaje(event) {
+        function ocultarIndicador() {
+            const ind = document.getElementById('analyzing-indicator');
+            if (ind) ind.remove();
+        }
+
+        async function enviarEntrada(event) {
             event.preventDefault();
-            if (isGenerating) return;
+            if (isProcessing) return;
 
             const input = document.getElementById('user-input');
-            const sendButton = document.getElementById('send-button');
             const texto = input.value.trim();
             if (!texto) return;
 
-            // Bloquear input/botón mientras responde
-            isGenerating = true;
+            isProcessing = true;
             input.value = '';
-            sendButton.disabled = true;
+            input.style.height = 'auto';
 
-            agregarMensajeUI('user', texto);
-            historialMensajes.push({ role: 'user', content: texto });
+            agregarBloque('user', texto);
+            historialSesion.push({ role: 'user', content: texto });
 
-            mostrarIndicadorEscribiendo();
+            mostrarIndicador();
 
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: historialMensajes })
+                    body: JSON.stringify({ messages: historialSesion })
                 });
 
                 const data = await response.json();
-                ocultarIndicadorEscribiendo();
+                ocultarIndicador();
 
                 if (data.choices && data.choices[0]) {
                     const respuesta = data.choices[0].message.content;
-                    agregarMensajeUI('assistant', respuesta);
-                    historialMensajes.push({ role: 'assistant', content: respuesta });
+                    agregarBloque('kumi', respuesta);
+                    historialSesion.push({ role: 'assistant', content: respuesta });
                 } else {
-                    agregarMensajeUI('assistant', 'Lo siento, hubo un inconveniente al procesar la respuesta.');
+                    agregarBloque('kumi', 'Ha ocurrido un inconveniente al generar la orientación. Por favor, intenta de nuevo.');
                 }
             } catch (error) {
-                ocultarIndicadorEscribiendo();
-                agregarMensajeUI('assistant', 'Error de conexión con el servidor.');
+                ocultarIndicador();
+                agregarBloque('kumi', 'Error de conexión con el servidor de acompañamiento.');
             } finally {
-                isGenerating = false;
-                sendButton.disabled = false;
-                input.focus();
+                isProcessing = false;
             }
         }
     </script>

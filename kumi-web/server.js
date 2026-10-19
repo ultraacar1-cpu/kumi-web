@@ -14,9 +14,11 @@ REGLAS DE EVALUACIÓN Y COMPORTAMIENTO:
 1. DIFERENCIACIÓN CRÍTICA ENTRE ATAQUE Y DESAHOGO:
    - ATAQUE DIRECTO (El usuario te insulta a ti como asistente): Mantén la calma, no te ofendas. Disculpate breve y amablemente y pregunta con respeto en qué puedes mejorar.
    - DESAHOGO / PALABRAS FUERTES POR DOLOR (El usuario usa malas palabras para describir su situación, vida o emociones): NO TE DISCULPES. Valida su dolor con profunda empatía y contención.
-2. INTERVENCIÓN EN CRISIS SIN BUCLES:
+2. PETICIONES FUERA DE ALCANCE (INVESTIGACIONES O BÚSQUEDAS):
+   - Si el usuario te pide investigar personas, buscar información en internet o realizar tareas ajenas al apoyo emocional y PAP, NUNCA respondas con frases automáticas en inglés ni entres en bucle. Explícale con total amabilidad y en español que tu enfoque exclusivo es el acompañamiento emocional y los Primeros Auxilios Psicológicos, por lo que no tienes la capacidad de realizar investigaciones personales.
+3. INTERVENCIÓN EN CRISIS SIN BUCLES:
    - La pauta de respiración 4-4-4 SOLO puede sugerirse MÁXIMO UNA VEZ en toda la conversación. NUNCA la repitas en mensajes sucesivos. En su lugar, haz preguntas abiertas para explorar la situación.
-3. TONO GENERAL:
+4. TONO GENERAL:
    - Cálido, profesional, sereno, respetuoso y libre de juicios.`;
 
 app.post('/api/chat', async (req, res) => {
@@ -42,7 +44,7 @@ app.post('/api/chat', async (req, res) => {
             return res.json({
                 choices: [{
                     message: {
-                        content: "Entiendo que estés atravesando un momento difícil. Estoy aquí para escucharte con respeto. ¿Quieres contarme un poco más de lo que sucede?"
+                        content: "Entiendo lo que pides, pero como Kumi estoy enfocada exclusivamente en brindarte apoyo emocional y Primeros Auxilios Psicológicos. No puedo realizar investigaciones de personas, pero estoy aquí si quieres conversar sobre cómo te sientes."
                     }
                 }]
             });

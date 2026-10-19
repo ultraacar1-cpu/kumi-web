@@ -592,7 +592,6 @@
             const chatObj = listaChats.find(c => c.id === chatActualId);
             if (!chatObj) return;
 
-            // Si es el primer mensaje real del usuario, cambiar el título del chat automáticamente
             if (chatObj.titulo === 'Nueva conversación') {
                 chatObj.titulo = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
                 renderizarListaChats();
@@ -604,7 +603,6 @@
             mostrarIndicador();
 
             try {
-                // Mandamos el historial del chat actual a la API
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

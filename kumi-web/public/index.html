@@ -19,7 +19,11 @@
             --emerald-soft: #ecfdf5;
             --emerald-dark: #047857;
             
-            /* Modo Claro: Usuario en gris (Cero azul) */
+            /* Botones y Bordes Interactivos (Modo Claro) */
+            --btn-bg: linear-gradient(135deg, #10b981, #047857);
+            --focus-border: #10b981;
+            
+            /* Usuario en gris (Cero azul) */
             --user-bg: #f1f5f9;
             --user-border: #cbd5e1;
             --user-accent: #64748b;
@@ -43,12 +47,16 @@
             --emerald-soft: #064e3b;
             --emerald-dark: #6ee7b7;
             
-            /* Modo Oscuro: Usuario en gris oscuro */
+            /* Botones y Bordes Interactivos adaptados a Modo Oscuro (Más sobrios) */
+            --btn-bg: linear-gradient(135deg, #059669, #047857);
+            --focus-border: #34d399;
+            
+            /* Usuario en gris oscuro */
             --user-bg: #334155;
             --user-border: #475569;
             --user-accent: #94a3b8;
             
-            /* Modo Oscuro: Kumi en azul oscuro (#1e3a8a) */
+            /* Kumi en azul oscuro (#1e3a8a) */
             --kumi-bg: #1e3a8a;
             --kumi-border: #3b82f6;
             --kumi-accent: #60a5fa;
@@ -82,7 +90,7 @@
         .brand-avatar {
             width: 44px;
             height: 44px;
-            background: linear-gradient(135deg, var(--emerald-main), #06b6d4);
+            background: var(--btn-bg);
             color: white;
             border-radius: 12px;
             display: flex;
@@ -98,7 +106,7 @@
         .status-dot { width: 8px; height: 8px; background-color: var(--emerald-main); border-radius: 50%; animation: pulse 2s infinite; }
 
         .btn-session {
-            background: linear-gradient(135deg, var(--emerald-main), var(--emerald-dark));
+            background: var(--btn-bg);
             color: white;
             border: none;
             padding: 12px 16px;
@@ -111,7 +119,7 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             width: 100%;
         }
 
@@ -193,30 +201,33 @@
             margin: 0 auto;
         }
 
+        /* Bloques de Interacción con alineación asimétrica */
         .session-block {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
+            width: 82%;
             border-radius: 16px;
             padding: 16px 18px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             animation: fadeIn 0.3s ease-out;
         }
 
-        /* Mensaje del Usuario: Gris en modo claro, gris oscuro en modo oscuro (Cero azul) */
+        /* Mensaje del Usuario: Más a la izquierda */
         .session-block.user-entry {
             background-color: var(--user-bg);
             border: 1px solid var(--user-border);
             border-left: 5px solid var(--user-accent);
+            margin-right: auto;
+            margin-left: 0;
         }
 
-        /* Mensaje de Kumi: Blanco en modo claro, Azul Oscuro en modo oscuro */
+        /* Mensaje de Kumi: Desplazado un poco más a la derecha */
         .session-block.kumi-entry {
             background-color: var(--kumi-bg);
             border: 1px solid var(--kumi-border);
             border-left: 5px solid var(--kumi-accent);
+            margin-left: auto;
+            margin-right: 0;
         }
         
-        /* Asegurar legibilidad del texto en el bloque azul oscuro de Kumi en modo oscuro */
         [data-theme="dark"] .session-block.kumi-entry .block-body,
         [data-theme="dark"] .session-block.kumi-entry .block-author {
             color: #f8fafc;
@@ -235,6 +246,7 @@
             color: var(--text-muted);
             padding: 8px 12px;
             font-weight: 500;
+            margin-right: auto;
         }
 
         /* Barra de Entrada */
@@ -252,8 +264,8 @@
             align-items: center;
         }
         .input-container:focus-within {
-            border-color: var(--emerald-main);
-            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.12);
+            border-color: var(--focus-border);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
         }
         .input-container textarea {
             flex: 1;
@@ -268,7 +280,7 @@
         }
         
         .btn-send {
-            background: linear-gradient(135deg, var(--emerald-main), var(--emerald-dark));
+            background: var(--btn-bg);
             color: white;
             border: none;
             width: 38px;
@@ -280,7 +292,7 @@
             justify-content: center;
             transition: all 0.2s;
             flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
         /* Overlay para cerrar el menú en móvil */
@@ -321,6 +333,9 @@
             }
             #session-container {
                 padding: 14px;
+            }
+            .session-block {
+                width: 92%;
             }
         }
     </style>
@@ -390,10 +405,18 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             reiniciarSesion();
-            // Cargar preferencia de tema guardada
             const savedTheme = localStorage.getItem('kumi_theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             actualizarIconoTema(savedTheme);
+
+            // Manejo de teclado: Enter para enviar, Shift + Enter para nueva línea
+            const userInput = document.getElementById('user-input');
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.querySelector('form.input-container').requestSubmit();
+                }
+            });
         });
 
         function toggleTheme() {

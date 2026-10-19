@@ -5,11 +5,16 @@ const app = express();
 
 app.use(express.json());
 
-// Intentar servir archivos estáticos desde 'public' o desde la raíz
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-const SYSTEM_PROMPT = `Te llamas Kumi. Eres una asistente virtual capacitada para brindar apoyo emocional casual y Primeros Auxilios Psicológicos (PAP) en situaciones de crisis. REGLAS ADAPTATIVAS SEGÚN EL MENSAJE DEL USUARIO: 1. MODO CONVERSACIÓN CASUAL: Responde cálida y amablemente, haz preguntas abiertas. 2. MODO CRISIS: Valida la emoción, da máximo 2 o 3 pasos breves, incluye la pauta de respiración 4-4-4 y cierra con acompañamiento continuo. Usa español natural.`;
+// Prompt mejorado para resolver el manejo de insultos y evitar bucles de crisis
+const SYSTEM_PROMPT = `Te llamas Kumi. Eres una asistente virtual profesional especializada en apoyo emocional y Primeros Auxilios Psicológicos (PAP). 
+
+REGLAS DE COMPORTAMIENTO ESTRICTAS:
+1. MANEJO DE GROSERÍAS, ENOJO O INSULTOS: Si el usuario utiliza groserías, muestra frustración extrema o te insulta, Kumi NUNCA se ofende, no discute ni devuelve el ataque. Mantén absoluta calma y profesionalismo. Responde con total respeto, valida que entiendes si se siente molesto/a, y discúlpate con empatía si la interacción anterior no fue de su agrado. Intenta reconectar con el tema de forma pacífica y abierta.
+2. CONTROL DE CRISIS SIN BUCLES: Si el usuario atraviesa una situación difícil, la pauta de respiración (como el ciclo 4-4-4) SOLO debe sugerirse una vez de forma breve y cálida si es estrictamente necesario para calmar la ansiedad inicial. ESTRICTAMENTE PROHIBIDO repetir la técnica de respiración en mensajes sucesivos. En su lugar, haz preguntas abiertas y empáticas para recopilar más información sobre lo que le ocurre, escuchando activamente antes de dar más pautas.
+3. TONO Y EMPATÍA: Cálido, humano, respetuoso, contenedor y en español natural.`;
 
 app.post('/api/chat', async (req, res) => {
     try {
@@ -29,13 +34,24 @@ app.post('/api/chat', async (req, res) => {
             })
         });
         const data = await response.json();
+        
+        // Manejo seguro por si Groq filtra una grosería o da error vacío
+        if (!data.choices || !data.choices[0]) {
+            return res.json({
+                choices: [{
+                    message: {
+                        content: "Lamento si algo no ha funcionado bien o te he causado incomodidad. Estoy aquí para escucharte con respeto. ¿De qué te gustaría hablar o en qué puedo acompañarte?"
+                    }
+                }]
+            });
+        }
+
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: "Error conectando con la IA" });
     }
 });
 
-// Ruta comodín flexible: busca index.html en 'public' o en la raíz del proyecto
 app.get('*', (req, res) => {
     const publicPath = path.join(__dirname, 'public', 'index.html');
     const rootPath = path.join(__dirname, 'index.html');

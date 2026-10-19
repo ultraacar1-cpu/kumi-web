@@ -19,11 +19,11 @@
             --emerald-soft: #ecfdf5;
             --emerald-dark: #047857;
             
-            /* Botones y Bordes Interactivos (Modo Claro) */
-            --btn-bg: linear-gradient(135deg, #10b981, #047857);
+            /* Botones y acentos generales modo claro */
+            --btn-bg: linear-gradient(135deg, #10b981, #059669);
             --focus-border: #10b981;
-            
-            /* Usuario en gris (Cero azul) */
+
+            /* Modo Claro: Usuario en gris */
             --user-bg: #f1f5f9;
             --user-border: #cbd5e1;
             --user-accent: #64748b;
@@ -34,7 +34,7 @@
             --kumi-accent: #10b981;
         }
 
-        /* Variables para el Modo Oscuro */
+        /* Variables para el Modo Oscuro (Sin verdes chocantes, tonos armónicos) */
         [data-theme="dark"] {
             --bg-canvas: #0f172a;
             --bg-card: #1e293b;
@@ -43,20 +43,20 @@
             --text-muted: #94a3b8;
             --border-subtle: #334155;
             
-            --emerald-main: #34d399;
-            --emerald-soft: #064e3b;
-            --emerald-dark: #6ee7b7;
+            --emerald-main: #38bdf8;
+            --emerald-soft: #0c4a6e;
+            --emerald-dark: #bae6fd;
+
+            /* Botones y acentos en modo oscuro armónicos con el azul */
+            --btn-bg: linear-gradient(135deg, #0284c7, #0369a1);
+            --focus-border: #38bdf8;
             
-            /* Botones y Bordes Interactivos adaptados a Modo Oscuro (Más sobrios) */
-            --btn-bg: linear-gradient(135deg, #059669, #047857);
-            --focus-border: #34d399;
-            
-            /* Usuario en gris oscuro */
+            /* Modo Oscuro: Usuario en gris oscuro */
             --user-bg: #334155;
             --user-border: #475569;
             --user-accent: #94a3b8;
             
-            /* Kumi en azul oscuro (#1e3a8a) */
+            /* Modo Oscuro: Kumi en azul oscuro (#1e3a8a) */
             --kumi-bg: #1e3a8a;
             --kumi-border: #3b82f6;
             --kumi-accent: #60a5fa;
@@ -98,12 +98,12 @@
             justify-content: center;
             font-weight: 700;
             font-size: 20px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .brand-title h1 { font-size: 17px; font-weight: 700; color: var(--text-primary); }
-        .brand-title p { font-size: 12px; color: var(--emerald-dark); font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .status-dot { width: 8px; height: 8px; background-color: var(--emerald-main); border-radius: 50%; animation: pulse 2s infinite; }
+        .brand-title p { font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
 
         .btn-session {
             background: var(--btn-bg);
@@ -124,13 +124,13 @@
         }
 
         .pfa-notice {
-            background-color: var(--emerald-soft);
+            background-color: var(--bg-canvas);
             border: 1px solid var(--border-subtle);
             border-radius: 12px;
             padding: 14px;
             margin-top: 20px;
         }
-        .pfa-notice h3 { font-size: 12px; font-weight: 700; color: var(--emerald-dark); text-transform: uppercase; margin-bottom: 6px; }
+        .pfa-notice h3 { font-size: 12px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; margin-bottom: 6px; }
         .pfa-notice p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 
         .helpline-box {
@@ -177,7 +177,7 @@
         }
         .btn-theme:hover { background: var(--border-subtle); }
 
-        .tag-beta { background-color: var(--emerald-soft); color: var(--emerald-dark); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
+        .tag-beta { background-color: var(--bg-canvas); color: var(--text-primary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
 
         .btn-menu-mobile {
             display: none;
@@ -201,31 +201,31 @@
             margin: 0 auto;
         }
 
-        /* Bloques de Interacción con alineación asimétrica */
+        /* Bloques de conversación con alineación asimétrica (Usuario derecha, Kumi izquierda) */
         .session-block {
-            width: 82%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
             border-radius: 16px;
             padding: 16px 18px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             animation: fadeIn 0.3s ease-out;
+            width: 82%;
         }
 
-        /* Mensaje del Usuario: Más a la izquierda */
+        /* Usuario hacia la derecha */
         .session-block.user-entry {
             background-color: var(--user-bg);
             border: 1px solid var(--user-border);
-            border-left: 5px solid var(--user-accent);
-            margin-right: auto;
-            margin-left: 0;
+            border-right: 5px solid var(--user-accent);
+            margin-left: auto; 
         }
 
-        /* Mensaje de Kumi: Desplazado un poco más a la derecha */
+        /* Kumi hacia la izquierda */
         .session-block.kumi-entry {
             background-color: var(--kumi-bg);
             border: 1px solid var(--kumi-border);
             border-left: 5px solid var(--kumi-accent);
-            margin-left: auto;
-            margin-right: 0;
+            margin-right: auto; 
         }
         
         [data-theme="dark"] .session-block.kumi-entry .block-body,
@@ -265,7 +265,7 @@
         }
         .input-container:focus-within {
             border-color: var(--focus-border);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
         }
         .input-container textarea {
             flex: 1;
@@ -391,7 +391,7 @@
 
         <footer>
             <form onsubmit="enviarEntrada(event)" class="input-container">
-                <textarea id="user-input" placeholder="Escribe aquí lo que estás sintiendo..." rows="1" oninput="autoResize(this)"></textarea>
+                <textarea id="user-input" placeholder="Escribe aquí lo que estás sintiendo..." rows="1" oninput="autoResize(this)" id="chat-textarea"></textarea>
                 <button type="submit" id="send-button" class="btn-send">
                     <i class="fa-solid fa-arrow-up"></i>
                 </button>
@@ -409,12 +409,16 @@
             document.body.setAttribute('data-theme', savedTheme);
             actualizarIconoTema(savedTheme);
 
-            // Manejo de teclado: Enter para enviar, Shift + Enter para nueva línea
-            const userInput = document.getElementById('user-input');
-            userInput.addEventListener('keydown', function(e) {
+            // Manejo de Enter para enviar y Shift + Enter para nueva línea
+            const textarea = document.getElementById('user-input');
+            textarea.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    document.querySelector('form.input-container').requestSubmit();
+                    // Envía el formulario simulando el evento submit
+                    const form = textarea.closest('form');
+                    if (form) {
+                        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
                 }
             });
         });

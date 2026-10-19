@@ -21,6 +21,12 @@ REGLAS DE EVALUACIÓN Y COMPORTAMIENTO:
 4. TONO GENERAL:
    - Cálido, profesional, sereno, respetuoso y libre de juicios.`;
 
+// Ruta para entregar directamente el archivo robots.txt a Google Search Console
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send("User-agent: *\nAllow: /");
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;

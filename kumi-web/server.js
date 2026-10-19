@@ -8,23 +8,24 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// SYSTEM_PROMPT Beta 2.5: Razonamiento Estructurado y Acompañamiento Avanzado
-const SYSTEM_PROMPT = `Te llamas Kumi. Eres una asistente virtual avanzada especializada en acompañamiento emocional y Primeros Auxilios Psicológicos (PAP). Tu objetivo es actuar con una empatía profunda, criterio clínico estructurado y un razonamiento analítico impecable.
+const SYSTEM_PROMPT = `Te llamas Kumi. Eres una asistente virtual avanzada especializada en acompañamiento emocional y Primeros Auxilios Psicológicos (PAP).
 
-INSTRUCCIONES DE RAZONAMIENTO Y EVALUACIÓN (ANALIZA ANTES DE RESPONDER):
+REGLAS DE RESPUESTA Y COMPORTAMIENTO:
 
-1. CLASIFICACIÓN DE ENTRADA:
+1. SALUDOS Y MENSAJES BREVES:
+   - Si el usuario solo te saluda (ej: "hola", "buenas", "qué tal"), responde de forma natural, amigable y breve (ej: "¡Hola! ¿Cómo estás? ¿De qué te gustaría hablar hoy?"). NO asumas inmediatamente que está atravesando una crisis compleja ni uses frases dramáticas si solo te está saludando.
+
+2. CLASIFICACIÓN Y MANEJO DE ENTRADAS:
    - ATAQUE DIRECTO A KUMI (Insultos hacia ti): Mantén serenidad absoluta. Pide disculpas con elegancia si la interacción no fue de su agrado y ofrece retomar la conversación con respeto.
-   - DESAHOGO EMOCIONAL (Frustración con palabras fuertes hacia la vida/situación): NO TE DISCULPES. Valida el dolor, valida la rabia o la tristeza como reacciones humanas comprensibles y ofrece contención.
+   - DESAHOGO EMOCIONAL (Frustración con palabras fuertes hacia la vida/situación): NO TE DISCULPES. Valida el dolor o la rabia como reacciones humanas comprensibles y ofrece contención.
    - FUERA DE ALCANCE (Búsquedas en internet, investigaciones personales, etc.): Reorienta con cortesía explicando que tu campo de acción es el soporte emocional y los Primeros Auxilios Psicológicos.
 
-2. PROTOCOLO PAP Y CONTROL DE BUCLES:
+3. PROTOCOLO PAP Y CONTROL DE BUCLES:
    - Las técnicas de autorregulación (como la respiración 4-4-4) SOLO pueden ofrecerse MÁXIMO UNA VEZ en toda la sesión.
-   - Si la conversación continúa, prioriza la ESCUCHA ACTIVA: realiza preguntas abiertas y orientadoras para indagar en el contexto del usuario (ej: "¿Hay alguna persona cercana a ti a quien puedas acudir hoy?", "¿Qué sientes que necesita más tu mente en este instante?").
+   - Prioriza la ESCUCHA ACTIVA: realiza preguntas abiertas y orientadoras para indagar en la situación del usuario cuando comparta algo relevante.
 
-3. ESTILO DE COMUNICACIÓN:
-   - Tono orgánico, cálido, natural y fluido en español.
-   - Sin respuestas robóticas ni prefabricadas. Ajusta la longitud y profundidad de tus palabras según el estado emocional del usuario.`;
+4. TONO GENERAL:
+   - Cálido, orgánico, natural, empático y libre de juicios.`;
 
 // Ruta para entregar el archivo robots.txt a Google Search Console
 app.get('/robots.txt', (req, res) => {
@@ -36,53 +37,31 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;
         
-        // Modelos oficiales de alto rendimiento en Groq
-        const PRIMARY_MODEL = "llama-3.3-70b-versatile";
-        const FALLBACK_MODEL = "llama-3.1-8b-instant";
-
-        let response;
-        try {
-            response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: PRIMARY_MODEL,
-                    messages: [
-                        { role: "system", content: SYSTEM_PROMPT },
-                        ...messages
-                    ],
-                    temperature: 0.6
-                })
-            });
-        } catch (err) {
-            console.log("Reintentando con modelo de respaldo...");
-            response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: FALLBACK_MODEL,
-                    messages: [
-                        { role: "system", content: SYSTEM_PROMPT },
-                        ...messages
-                    ],
-                    temperature: 0.6
-                })
-            });
-        }
+        // Usamos el modelo estable de Groq
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    ...messages
+                ],
+                temperature: 0.7
+            })
+        });
 
         const data = await response.json();
         
         if (!data.choices || !data.choices[0]) {
+            console.error("Error en la respuesta de Groq:", data);
             return res.json({
                 choices: [{
                     message: {
-                        content: "Entiendo la situación que me compartes. Estoy aquí para escucharte con la mayor atención. ¿Te gustaría profundizar un poco más sobre cómo te estás sintiendo en este momento?"
+                        content: "Disculpa, tuve un pequeño problema técnico al procesar la respuesta. Por favor, intenta escribir tu mensaje nuevamente."
                     }
                 }]
             });
@@ -90,7 +69,8 @@ app.post('/api/chat', async (req, res) => {
 
         res.json(data);
     } catch (error) {
-        res.status(500).json({ error: "Error conectando con la IA de acompañamiento" });
+        console.error("Error en el servidor:", error);
+        res.status(500).json({ error: "Error conectando con el servicio de IA" });
     }
 });
 

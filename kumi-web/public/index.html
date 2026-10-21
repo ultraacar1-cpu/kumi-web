@@ -71,7 +71,7 @@
             to { opacity: 1; }
         }
 
-        /* Panel Lateral */
+        /* Panel Lateral (Sidebar) */
         aside {
             width: 310px;
             background-color: var(--bg-card);
@@ -82,8 +82,13 @@
             justify-content: space-between;
             flex-shrink: 0;
             box-shadow: 2px 0 8px rgba(0,0,0,0.02);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
+        }
+
+        /* Colapso de Sidebar en Escritorio */
+        aside.collapsed {
+            margin-left: -310px;
         }
 
         .sidebar-top {
@@ -157,22 +162,73 @@
             letter-spacing: 0.5px;
         }
 
+        /* Ítem de Conversación en el Sidebar */
         .chat-history-item {
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 10px;
             font-size: 13px;
             color: var(--text-secondary);
             cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .chat-history-item:hover { background-color: var(--chat-item-hover); }
+        .chat-history-item.active { 
+            background-color: var(--chat-item-active); 
+            font-weight: 600; 
+            color: var(--text-primary); 
+            border-left: 3px solid var(--focus-border); 
+        }
+
+        .chat-item-main {
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: background 0.2s;
+            overflow: hidden;
+            flex: 1;
         }
-        .chat-history-item:hover { background-color: var(--chat-item-hover); }
-        .chat-history-item.active { background-color: var(--chat-item-active); font-weight: 600; color: var(--text-primary); border-left: 3px solid var(--focus-border); }
+
+        .chat-item-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        /* Botón Lápiz para Editar Título */
+        .btn-edit-title {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-edit-title:hover {
+            color: var(--text-primary);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Campo Input para Edición de Título In-Situ */
+        .edit-title-input {
+            width: 100%;
+            background: var(--bg-canvas);
+            border: 1px solid var(--focus-border);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+        }
 
         .sidebar-bottom {
             display: flex;
@@ -220,7 +276,9 @@
         header h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         .header-actions { display: flex; align-items: center; gap: 10px; }
-        .btn-theme {
+        
+        /* Botones del Header (Ocultar Menú y Cambiar Tema) */
+        .btn-header-action {
             background: var(--bg-canvas);
             border: 1px solid var(--border-subtle);
             color: var(--text-primary);
@@ -232,9 +290,9 @@
             align-items: center;
             justify-content: center;
             font-size: 15px;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.2s;
         }
-        .btn-theme:hover { background: var(--border-subtle); }
+        .btn-header-action:hover { background: var(--border-subtle); transform: translateY(-1px); }
 
         .tag-beta { background-color: var(--bg-canvas); color: var(--text-primary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
 
@@ -270,7 +328,7 @@
             transition: all 0.4s ease;
             z-index: 10;
             background-color: var(--bg-canvas);
-            margin-bottom: 80px; /* Espacio para el input */
+            margin-bottom: 80px;
         }
 
         .welcome-avatar-large {
@@ -479,6 +537,7 @@
                 left: 0;
                 bottom: 0;
                 transform: translateX(-100%);
+                margin-left: 0 !important;
             }
             aside.open {
                 transform: translateX(0);
@@ -488,6 +547,9 @@
             }
             .btn-menu-mobile {
                 display: block;
+            }
+            .btn-toggle-desktop {
+                display: none !important;
             }
             header { padding: 0 16px; }
             header h2 { font-size: 14px; }
@@ -511,7 +573,7 @@
                 </div>
             </div>
 
-            <button onclick="crearNuevoChat(); toggleSidebar();" class="btn-session">
+            <button onclick="crearNuevoChat(); toggleSidebarIfMobile();" class="btn-session">
                 <i class="fa-solid fa-plus"></i> Nuevo Chat
             </button>
 
@@ -537,7 +599,11 @@
                 <h2>Acompañamiento & PAP</h2>
             </div>
             <div class="header-actions">
-                <button class="btn-theme" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
+                <!-- Botón Desktop para Ocultar/Mostrar el Menú Lateral -->
+                <button class="btn-header-action btn-toggle-desktop" onclick="toggleDesktopSidebar()" title="Alternar Menú Lateral" aria-label="Ocultar menú">
+                    <i id="sidebar-toggle-icon" class="fa-solid fa-sidebar"></i>
+                </button>
+                <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
                 <span class="tag-beta">Beta 2</span>
@@ -573,11 +639,18 @@
         let listaChats = [];
         let chatActualId = null;
         let isProcessing = false;
+        let editingChatId = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('kumi_theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             actualizarIconoTema(savedTheme);
+
+            // Cargar estado guardado del menú lateral en PC
+            const sidebarCollapsed = localStorage.getItem('kumi_sidebar_collapsed') === 'true';
+            if (sidebarCollapsed && window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.add('collapsed');
+            }
 
             crearNuevoChat();
 
@@ -606,9 +679,24 @@
             icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         }
 
+        /* Ocultar/Mostrar Menú Lateral en Escritorio */
+        function toggleDesktopSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('kumi_sidebar_collapsed', isCollapsed);
+        }
+
+        /* Menú Mobile */
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('active');
+        }
+
+        function toggleSidebarIfMobile() {
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
         }
 
         function autoResize(textarea) {
@@ -638,6 +726,7 @@
 
         function cambiarChat(id) {
             chatActualId = id;
+            editingChatId = null; // Cancelar modo edición si cambiamos de chat
             const chatObj = listaChats.find(c => c.id === id);
             if (!chatObj) return;
 
@@ -660,6 +749,22 @@
             renderizarListaChats();
         }
 
+        /* Edición de Nombre de Conversación */
+        function activarEdicionTitulo(e, id) {
+            e.stopPropagation(); // Evitar cambiar de chat al presionar el lápiz
+            editingChatId = id;
+            renderizarListaChats();
+        }
+
+        function guardarNuevoTitulo(id, nuevoTexto) {
+            const chatObj = listaChats.find(c => c.id === id);
+            if (chatObj && nuevoTexto.trim() !== '') {
+                chatObj.titulo = nuevoTexto.trim();
+            }
+            editingChatId = null;
+            renderizarListaChats();
+        }
+
         function renderizarListaChats() {
             const historyList = document.getElementById('chat-history-list');
             historyList.innerHTML = '';
@@ -669,11 +774,53 @@
             chatsConMensajes.forEach(chat => {
                 const item = document.createElement('div');
                 item.className = `chat-history-item ${chat.id === chatActualId ? 'active' : ''}`;
-                item.innerHTML = `<i class="fa-regular fa-message"></i> <span>${chat.titulo}</span>`;
-                item.onclick = () => {
-                    cambiarChat(chat.id);
-                    if (window.innerWidth <= 768) toggleSidebar();
-                };
+
+                if (editingChatId === chat.id) {
+                    // Modo Edición In-Situ
+                    item.innerHTML = `
+                        <input type="text" class="edit-title-input" value="${chat.titulo.replace(/"/g, '&quot;')}" id="input-edit-${chat.id}">
+                    `;
+                    item.onclick = (e) => e.stopPropagation();
+
+                    setTimeout(() => {
+                        const inputEdit = document.getElementById(`input-edit-${chat.id}`);
+                        if (inputEdit) {
+                            inputEdit.focus();
+                            inputEdit.select();
+                            
+                            const finalizarEdicion = () => guardarNuevoTitulo(chat.id, inputEdit.value);
+                            
+                            inputEdit.onblur = finalizarEdicion;
+                            inputEdit.onkeydown = (ev) => {
+                                if (ev.key === 'Enter') {
+                                    ev.preventDefault();
+                                    finalizarEdicion();
+                                } else if (ev.key === 'Escape') {
+                                    editingChatId = null;
+                                    renderizarListaChats();
+                                }
+                            };
+                        }
+                    }, 50);
+
+                } else {
+                    // Modo Normal con Botón de Lápiz
+                    item.innerHTML = `
+                        <div class="chat-item-main">
+                            <i class="fa-regular fa-message"></i> 
+                            <span class="chat-item-title">${chat.titulo}</span>
+                        </div>
+                        <button class="btn-edit-title" onclick="activarEdicionTitulo(event, '${chat.id}')" title="Editar nombre">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    `;
+
+                    item.onclick = () => {
+                        cambiarChat(chat.id);
+                        toggleSidebarIfMobile();
+                    };
+                }
+
                 historyList.appendChild(item);
             });
         }

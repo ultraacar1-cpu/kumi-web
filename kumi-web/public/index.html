@@ -737,4 +737,134 @@
             historyList.innerHTML = '';
 
             // Solo mostrar en el sidebar aquellos chats que ya tengan al menos un mensaje del usuario
-            const chatsConMensajes = listaChats.filter(chat => chat.historial.some(
+            const chatsConMensajes = listaChats.filter(chat => chat.historial.some(m => m.role === 'user') || chat.id === chatActualId);
+
+            chatsConMensajes.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = `chat-history-item ${chat.id === chatActualId ? 'active' : ''}`;
+                item.innerHTML = `<i class="fa-regular fa-message"></i> <span>${chat.titulo}</span>`;
+                item.onclick = () => {
+                    cambiarChat(chat.id);
+                    if (window.innerWidth <= 768) toggleSidebar();
+                };
+                historyList.appendChild(item);
+            });
+        }
+
+        function agregarBloqueUI(autor, texto, scroll = true) {
+            const container = document.getElementById('session-container');
+            const isUser = autor === 'user';
+
+            const block = document.createElement('div');
+            block.className = `session-block ${isUser ? 'user-entry' : 'kumi-entry'}`;
+
+            const header = document.createElement('div');
+            header.className = 'block-header';
+            header.innerHTML = `
+                <span class="block-author">${isUser ? 'Tu Registro' : 'Orientación de Kumi'}</span>
+                <span class="block-role">• ${isUser ? 'Usuario' : 'Asistente PAP'}</span>
+            `;
+
+            const body = document.createElement('div');
+            body.className = 'block-body';
+            body.innerHTML = texto
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            block.appendChild(header);
+            block.appendChild(body);
+            container.appendChild(block);
+            if (scroll) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function mostrarIndicador() {
+            const container = document.getElementById('session-container');
+            const ind = document.createElement('div');
+            ind.id = 'analyzing-indicator';
+            ind.className = 'analyzing-indicator';
+            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--kumi-accent);"></i> Kumi está procesando tu mensaje con contención...`;
+            container.appendChild(ind);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function ocultarIndicador() {
+            const ind = document.getElementById('analyzing-indicator');
+            if (ind) ind.remove();
+        }
+
+        function enviarSugerencia(texto) {
+            const input = document.getElementById('user-input');
+            input.value = texto;
+            autoResize(input);
+            const form = input.closest('form');
+            if (form) {
+                form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        }
+
+        async function enviarEntrada(event) {
+            event.preventDefault();
+            if (isProcessing) return;
+
+            const input = document.getElementById('user-input');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            // Transición animada de pantalla inicial a modo chat
+            const mainApp = document.getElementById('main-app');
+            if (mainApp.classList.contains('state-welcome')) {
+                mainApp.classList.remove('state-welcome');
+                mainApp.classList.add('state-chat');
+            }
+
+            isProcessing = true;
+            input.value = '';
+            input.style.height = 'auto';
+
+            const chatObj = listaChats.find(c => c.id === chatActualId);
+            if (!chatObj) return;
+
+            if (chatObj.titulo === 'Nueva conversación') {
+                chatObj.titulo = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
+            }
+
+            agregarBloqueUI('user', texto);
+            chatObj.historial.push({ role: 'user', content: texto });
+            renderizarListaChats();
+
+            mostrarIndicador();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatObj.historial })
+                });
+
+                const data = await response.json();
+                ocultarIndicador();
+
+                if (data.choices && data.choices[0]) {
+                    const respuesta = data.choices[0].message.content;
+                    agregarBloqueUI('kumi', respuesta);
+                    chatObj.historial.push({ role: 'assistant', content: respuesta });
+                } else {
+                    const fallback = 'Ha ocurrido un inconveniente al generar la orientación. Por favor, intenta de nuevo.';
+                    agregarBloqueUI('kumi', fallback);
+                    chatObj.historial.push({ role: 'assistant', content: fallback });
+                }
+            } catch (error) {
+                ocultarIndicador();
+                const fallback = 'Error de conexión con el servidor de acompañamiento.';
+                agregarBloqueUI('kumi', fallback);
+                chatObj.historial.push({ role: 'assistant', content: fallback });
+            } finally {
+                isProcessing = false;
+            }
+        }
+    </script>
+</body>
+</html>

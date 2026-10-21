@@ -54,7 +54,7 @@
             --chat-item-active: #334155;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-canvas); color: var(--text-primary); height: 100vh; height: 100dvh; display: flex; overflow: hidden; }
 
         /* Panel Lateral */
@@ -180,7 +180,7 @@
         .helpline-item { font-size: 11.5px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 3px; }
 
         /* Área Principal */
-        main { flex: 1; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-canvas); min-width: 0; }
+        main { flex: 1; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-canvas); min-width: 0; position: relative; overflow: hidden; }
 
         header {
             height: 64px;
@@ -192,6 +192,7 @@
             justify-content: space-between;
             gap: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            z-index: 20;
         }
         .header-title-group { display: flex; align-items: center; gap: 12px; }
         header h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -225,6 +226,89 @@
             padding: 4px;
         }
 
+        /* Contenedor del área de chat y bienvenida */
+        .chat-viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Pantalla de bienvenida centrada */
+        .welcome-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 12vh;
+            text-align: center;
+            padding-left: 20px;
+            padding-right: 20px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            background-color: var(--bg-canvas);
+        }
+
+        .welcome-avatar-large {
+            width: 64px;
+            height: 64px;
+            background: var(--btn-bg);
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .welcome-screen h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .welcome-screen p {
+            font-size: 15px;
+            color: var(--text-muted);
+            max-width: 480px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .quick-prompts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 540px;
+        }
+
+        .prompt-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 9px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .prompt-chip:hover {
+            border-color: var(--focus-border);
+            background: var(--chat-item-hover);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
         #session-container {
             flex: 1;
             overflow-y: auto;
@@ -235,6 +319,9 @@
             max-width: 840px;
             width: 100%;
             margin: 0 auto;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
 
         .session-block {
@@ -282,8 +369,14 @@
             margin-right: auto;
         }
 
-        /* Barra de Entrada */
-        footer { padding: 12px 16px 16px 16px; background-color: var(--bg-canvas); }
+        /* Barra de Entrada y sus Transiciones según el Estado */
+        footer {
+            padding: 16px;
+            background-color: var(--bg-canvas);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+        }
+
         .input-container {
             max-width: 840px;
             margin: 0 auto;
@@ -295,6 +388,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            transition: all 0.3s;
         }
         .input-container:focus-within {
             border-color: var(--focus-border);
@@ -328,6 +422,52 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
+        /* --- CONTROL DE ESTADOS (WELCOME vs CHAT) --- */
+        
+        /* 1. Estado de Bienvenida (Input centrado en el medio de la pantalla) */
+        main.state-welcome .welcome-screen {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        main.state-welcome #session-container {
+            opacity: 0;
+            pointer-events: none;
+        }
+        main.state-welcome footer {
+            position: absolute;
+            bottom: 32vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 720px;
+            background: transparent;
+            padding: 0 20px;
+        }
+        main.state-welcome .input-container {
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 2. Estado de Chat activo (Input abajo y bienvenida oculta) */
+        main.state-chat .welcome-screen {
+            opacity: 0;
+            transform: translateY(-30px);
+            pointer-events: none;
+        }
+        main.state-chat #session-container {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        main.state-chat footer {
+            position: relative;
+            bottom: auto;
+            left: auto;
+            transform: none;
+            max-width: none;
+            background-color: var(--bg-canvas);
+            padding: 12px 16px 16px 16px;
+        }
+
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -349,6 +489,7 @@
                 transform: translateX(-100%);
             }
             aside.open {
+                transform: translateX(-100%, 0); /* corregido */
                 transform: translateX(0);
             }
             .sidebar-overlay.active {
@@ -357,18 +498,12 @@
             .btn-menu-mobile {
                 display: block;
             }
-            header {
-                padding: 0 16px;
-            }
-            header h2 {
-                font-size: 14px;
-            }
-            #session-container {
-                padding: 14px;
-            }
-            .session-block {
-                width: 92%;
-            }
+            header { padding: 0 16px; }
+            header h2 { font-size: 14px; }
+            #session-container { padding: 14px; }
+            .session-block { width: 92%; }
+            main.state-welcome footer { bottom: 28vh; }
+            .welcome-screen h1 { font-size: 22px; }
         }
     </style>
 </head>
@@ -405,7 +540,7 @@
         </div>
     </aside>
 
-    <main>
+    <main id="main-app" class="state-welcome">
         <header>
             <div class="header-title-group">
                 <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
@@ -421,7 +556,22 @@
             </div>
         </header>
 
-        <div id="session-container"></div>
+        <div class="chat-viewport">
+            <!-- Pantalla de bienvenida centrada -->
+            <div id="welcome-screen" class="welcome-screen">
+                <div class="welcome-avatar-large">K</div>
+                <h1>¿Cómo te sientes hoy?</h1>
+                <p>Estoy aquí para escucharte, brindarte contención emocional y Primeros Auxilios Psicológicos (PAP) en un espacio seguro.</p>
+                <div class="quick-prompts">
+                    <button class="prompt-chip" onclick="enviarSugerencia('Me siento muy ansioso/a y abrumado/a')">Siento mucha ansiedad</button>
+                    <button class="prompt-chip" onclick="enviarSugerencia('Necesito desahogarme, todo me sobrepasa')">Necesito desahogarme</button>
+                    <button class="prompt-chip" onclick="enviarSugerencia('¿Qué son los Primeros Auxilios Psicológicos?')">¿Qué es el PAP?</button>
+                </div>
+            </div>
+
+            <!-- Contenedor del chat -->
+            <div id="session-container"></div>
+        </div>
 
         <footer>
             <form onsubmit="enviarEntrada(event)" class="input-container">
@@ -515,6 +665,18 @@
                 agregarBloqueUI(msg.role === 'user' ? 'user' : 'kumi', msg.content, false);
             });
 
+            // Verificar si el chat actual ya tiene mensajes de usuario para definir el estado visual
+            const mainApp = document.getElementById('main-app');
+            const tieneMensajesUsuario = chatObj.historial.some(m => m.role === 'user');
+            
+            if (tieneMensajesUsuario) {
+                mainApp.classList.remove('state-welcome');
+                mainApp.classList.add('state-chat');
+            } else {
+                mainApp.classList.remove('state-chat');
+                mainApp.classList.add('state-welcome');
+            }
+
             renderizarListaChats();
         }
 
@@ -578,6 +740,16 @@
             if (ind) ind.remove();
         }
 
+        function enviarSugerencia(texto) {
+            const input = document.getElementById('user-input');
+            input.value = texto;
+            autoResize(input);
+            const form = input.closest('form');
+            if (form) {
+                form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        }
+
         async function enviarEntrada(event) {
             event.preventDefault();
             if (isProcessing) return;
@@ -585,6 +757,13 @@
             const input = document.getElementById('user-input');
             const texto = input.value.trim();
             if (!texto) return;
+
+            // Transicionar de bienvenida a chat al enviar el primer mensaje
+            const mainApp = document.getElementById('main-app');
+            if (mainApp.classList.contains('state-welcome')) {
+                mainApp.classList.remove('state-welcome');
+                mainApp.classList.add('state-chat');
+            }
 
             isProcessing = true;
             input.value = '';

@@ -56,7 +56,6 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* Animación Fade-In Global al Cargar la Página */
         body { 
             background-color: var(--bg-canvas); 
             color: var(--text-primary); 
@@ -64,18 +63,12 @@
             height: 100dvh; 
             display: flex; 
             overflow: hidden; 
-            animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: pageFadeIn 0.6s ease-out forwards;
         }
 
         @keyframes pageFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.99);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* Panel Lateral */
@@ -145,7 +138,6 @@
         }
         .btn-session:hover { opacity: 0.95; transform: translateY(-1px); }
 
-        /* Lista de Chats Guardados */
         .chat-history-container {
             flex: 1;
             overflow-y: auto;
@@ -201,7 +193,16 @@
         .helpline-item { font-size: 11.5px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; margin-bottom: 3px; }
 
         /* Área Principal */
-        main { flex: 1; display: flex; flex-direction: column; height: 100%; background-color: var(--bg-canvas); min-width: 0; position: relative; overflow: hidden; }
+        main { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            background-color: var(--bg-canvas); 
+            min-width: 0; 
+            position: relative; 
+            overflow: hidden; 
+        }
 
         header {
             height: 64px;
@@ -247,7 +248,7 @@
             padding: 4px;
         }
 
-        /* Contenedor del área de chat y bienvenida */
+        /* Viewport y Contenedores */
         .chat-viewport {
             flex: 1;
             display: flex;
@@ -256,33 +257,20 @@
             overflow: hidden;
         }
 
-        /* Pantalla de bienvenida centrada */
+        /* Welcome Screen */
         .welcome-screen {
             position: absolute;
             inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding-top: 12vh;
+            justify-content: center;
+            padding: 20px;
             text-align: center;
-            padding-left: 20px;
-            padding-right: 20px;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s ease;
             z-index: 10;
             background-color: var(--bg-canvas);
-            animation: welcomeFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes welcomeFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            margin-bottom: 80px; /* Espacio para el input */
         }
 
         .welcome-avatar-large {
@@ -352,9 +340,8 @@
             max-width: 840px;
             width: 100%;
             margin: 0 auto;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            opacity: 1;
+            z-index: 5;
         }
 
         .session-block {
@@ -380,11 +367,6 @@
             border-left: 5px solid var(--kumi-accent);
             margin-right: auto; 
         }
-        
-        [data-theme="dark"] .session-block.kumi-entry .block-body,
-        [data-theme="dark"] .session-block.kumi-entry .block-author {
-            color: #f8fafc;
-        }
 
         .block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .block-author { font-size: 13px; font-weight: 700; color: var(--text-primary); }
@@ -402,27 +384,19 @@
             margin-right: auto;
         }
 
-        /* Barra de Entrada y sus Transiciones */
+        /* Footer y Barra de Entrada Centrada */
         footer {
             padding: 16px;
             background-color: var(--bg-canvas);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 20;
-            animation: footerFadeIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes footerFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .input-container {
+            width: 100%;
             max-width: 840px;
             margin: 0 auto;
             background: var(--bg-card);
@@ -467,50 +441,23 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        /* CONTROL DE ESTADOS (WELCOME vs CHAT) */
-        
-        /* 1. Estado Bienvenida */
+        /* LÓGICA DE ESTADOS EN CSS */
         main.state-welcome .welcome-screen {
             opacity: 1;
-            transform: translateY(0);
             pointer-events: auto;
+            transform: translateY(0);
         }
         main.state-welcome #session-container {
-            opacity: 0;
-            pointer-events: none;
-        }
-        main.state-welcome footer {
-            position: absolute;
-            bottom: 32vh;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 720px;
-            background: transparent;
-            padding: 0 20px;
-        }
-        main.state-welcome .input-container {
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+            display: none;
         }
 
-        /* 2. Estado Chat Activo */
         main.state-chat .welcome-screen {
             opacity: 0;
-            transform: translateY(-30px);
             pointer-events: none;
+            transform: translateY(-20px);
         }
         main.state-chat #session-container {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        main.state-chat footer {
-            position: relative;
-            bottom: auto;
-            left: auto;
-            transform: none;
-            max-width: none;
-            background-color: var(--bg-canvas);
-            padding: 12px 16px 16px 16px;
+            display: flex;
         }
 
         .sidebar-overlay {
@@ -546,7 +493,6 @@
             header h2 { font-size: 14px; }
             #session-container { padding: 14px; }
             .session-block { width: 92%; }
-            main.state-welcome footer { bottom: 28vh; }
             .welcome-screen h1 { font-size: 22px; }
         }
     </style>
@@ -570,9 +516,7 @@
             </button>
 
             <div class="chat-history-title">Conversaciones</div>
-            <div id="chat-history-list" class="chat-history-container">
-                <!-- Se llenará dinámicamente -->
-            </div>
+            <div id="chat-history-list" class="chat-history-container"></div>
         </div>
 
         <div class="sidebar-bottom">
@@ -601,7 +545,6 @@
         </header>
 
         <div class="chat-viewport">
-            <!-- Pantalla de bienvenida centrada -->
             <div id="welcome-screen" class="welcome-screen">
                 <div class="welcome-avatar-large">K</div>
                 <h1>¿Cómo te sientes hoy?</h1>
@@ -613,7 +556,6 @@
                 </div>
             </div>
 
-            <!-- Contenedor del chat -->
             <div id="session-container"></div>
         </div>
 
@@ -661,18 +603,12 @@
 
         function actualizarIconoTema(theme) {
             const icon = document.getElementById('theme-icon');
-            if (theme === 'dark') {
-                icon.className = 'fa-solid fa-sun';
-            } else {
-                icon.className = 'fa-solid fa-moon';
-            }
+            icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         }
 
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
         }
 
         function autoResize(textarea) {
@@ -681,13 +617,9 @@
         }
 
         function crearNuevoChat() {
-            // REGLA 1: Evitar acumulación de chats vacíos.
-            // Si el chat actual está vacío (sin mensajes del usuario), no se crea uno nuevo.
             if (chatActualId) {
                 const chatActual = listaChats.find(c => c.id === chatActualId);
-                const tieneMensajesUsuario = chatActual && chatActual.historial.some(m => m.role === 'user');
-                if (!tieneMensajesUsuario) {
-                    // Simplemente re-enfocamos el chat vacío existente sin crear uno nuevo
+                if (chatActual && chatActual.historial.length === 0) {
                     cambiarChat(chatActualId);
                     return;
                 }
@@ -697,7 +629,7 @@
             const nuevoChatObj = {
                 id: nuevoId,
                 titulo: 'Nueva conversación',
-                historial: [] // Iniciamos el historial completamente limpio (sin mensaje automático)
+                historial: []
             };
 
             listaChats.unshift(nuevoChatObj);
@@ -712,16 +644,12 @@
             const container = document.getElementById('session-container');
             container.innerHTML = '';
 
-            // Cargar los mensajes guardados si existen
             chatObj.historial.forEach(msg => {
                 agregarBloqueUI(msg.role === 'user' ? 'user' : 'kumi', msg.content, false);
             });
 
-            // Verificar si hay mensajes de usuario para activar vista de chat o bienvenida
             const mainApp = document.getElementById('main-app');
-            const tieneMensajesUsuario = chatObj.historial.some(m => m.role === 'user');
-            
-            if (tieneMensajesUsuario) {
+            if (chatObj.historial.length > 0) {
                 mainApp.classList.remove('state-welcome');
                 mainApp.classList.add('state-chat');
             } else {
@@ -736,8 +664,7 @@
             const historyList = document.getElementById('chat-history-list');
             historyList.innerHTML = '';
 
-            // Solo mostrar en el sidebar aquellos chats que ya tengan al menos un mensaje del usuario
-            const chatsConMensajes = listaChats.filter(chat => chat.historial.some(m => m.role === 'user') || chat.id === chatActualId);
+            const chatsConMensajes = listaChats.filter(chat => chat.historial.length > 0 || chat.id === chatActualId);
 
             chatsConMensajes.forEach(chat => {
                 const item = document.createElement('div');
@@ -775,6 +702,7 @@
             block.appendChild(header);
             block.appendChild(body);
             container.appendChild(block);
+
             if (scroll) {
                 container.scrollTop = container.scrollHeight;
             }
@@ -785,7 +713,7 @@
             const ind = document.createElement('div');
             ind.id = 'analyzing-indicator';
             ind.className = 'analyzing-indicator';
-            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--kumi-accent);"></i> Kumi está procesando tu mensaje con contención...`;
+            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--kumi-accent);"></i> Kumi está procesando tu mensaje...`;
             container.appendChild(ind);
             container.scrollTop = container.scrollHeight;
         }
@@ -813,12 +741,10 @@
             const texto = input.value.trim();
             if (!texto) return;
 
-            // Transición animada de pantalla inicial a modo chat
+            // Cambiar vista de pantalla de bienvenida a chat
             const mainApp = document.getElementById('main-app');
-            if (mainApp.classList.contains('state-welcome')) {
-                mainApp.classList.remove('state-welcome');
-                mainApp.classList.add('state-chat');
-            }
+            mainApp.classList.remove('state-welcome');
+            mainApp.classList.add('state-chat');
 
             isProcessing = true;
             input.value = '';

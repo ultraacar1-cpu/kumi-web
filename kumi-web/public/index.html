@@ -55,7 +55,28 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-canvas); color: var(--text-primary); height: 100vh; height: 100dvh; display: flex; overflow: hidden; }
+        
+        /* Animación Fade-In Global al Cargar la Página */
+        body { 
+            background-color: var(--bg-canvas); 
+            color: var(--text-primary); 
+            height: 100vh; 
+            height: 100dvh; 
+            display: flex; 
+            overflow: hidden; 
+            animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.99);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
 
         /* Panel Lateral */
         aside {
@@ -124,7 +145,7 @@
         }
         .btn-session:hover { opacity: 0.95; transform: translateY(-1px); }
 
-        /* Lista de Chats Guardados en Sesión */
+        /* Lista de Chats Guardados */
         .chat-history-container {
             flex: 1;
             overflow-y: auto;
@@ -250,6 +271,18 @@
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 10;
             background-color: var(--bg-canvas);
+            animation: welcomeFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes welcomeFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .welcome-avatar-large {
@@ -369,12 +402,24 @@
             margin-right: auto;
         }
 
-        /* Barra de Entrada y sus Transiciones según el Estado */
+        /* Barra de Entrada y sus Transiciones */
         footer {
             padding: 16px;
             background-color: var(--bg-canvas);
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 20;
+            animation: footerFadeIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes footerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .input-container {
@@ -422,9 +467,9 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
-        /* --- CONTROL DE ESTADOS (WELCOME vs CHAT) --- */
+        /* CONTROL DE ESTADOS (WELCOME vs CHAT) */
         
-        /* 1. Estado de Bienvenida (Input centrado en el medio de la pantalla) */
+        /* 1. Estado Bienvenida */
         main.state-welcome .welcome-screen {
             opacity: 1;
             transform: translateY(0);
@@ -448,7 +493,7 @@
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
         }
 
-        /* 2. Estado de Chat activo (Input abajo y bienvenida oculta) */
+        /* 2. Estado Chat Activo */
         main.state-chat .welcome-screen {
             opacity: 0;
             transform: translateY(-30px);
@@ -489,7 +534,6 @@
                 transform: translateX(-100%);
             }
             aside.open {
-                transform: translateX(-100%, 0); /* corregido */
                 transform: translateX(0);
             }
             .sidebar-overlay.active {
@@ -637,11 +681,23 @@
         }
 
         function crearNuevoChat() {
+            // REGLA 1: Evitar acumulación de chats vacíos.
+            // Si el chat actual está vacío (sin mensajes del usuario), no se crea uno nuevo.
+            if (chatActualId) {
+                const chatActual = listaChats.find(c => c.id === chatActualId);
+                const tieneMensajesUsuario = chatActual && chatActual.historial.some(m => m.role === 'user');
+                if (!tieneMensajesUsuario) {
+                    // Simplemente re-enfocamos el chat vacío existente sin crear uno nuevo
+                    cambiarChat(chatActualId);
+                    return;
+                }
+            }
+
             const nuevoId = 'chat_' + Date.now();
             const nuevoChatObj = {
                 id: nuevoId,
                 titulo: 'Nueva conversación',
-                historial: []
+                historial: [] // Iniciamos el historial completamente limpio (sin mensaje automático)
             };
 
             listaChats.unshift(nuevoChatObj);
@@ -656,16 +712,12 @@
             const container = document.getElementById('session-container');
             container.innerHTML = '';
 
-            if (chatObj.historial.length === 0) {
-                const mensajeInicial = 'Bienvenido/a a este espacio de escucha. Soy **Kumi**, una asistente diseñada para brindarte orientación inicial y Primeros Auxilios Psicológicos (PAP).\n\n¿Qué pensamientos o emociones quisieras compartir en este momento?';
-                chatObj.historial.push({ role: 'assistant', content: mensajeInicial });
-            }
-
+            // Cargar los mensajes guardados si existen
             chatObj.historial.forEach(msg => {
                 agregarBloqueUI(msg.role === 'user' ? 'user' : 'kumi', msg.content, false);
             });
 
-            // Verificar si el chat actual ya tiene mensajes de usuario para definir el estado visual
+            // Verificar si hay mensajes de usuario para activar vista de chat o bienvenida
             const mainApp = document.getElementById('main-app');
             const tieneMensajesUsuario = chatObj.historial.some(m => m.role === 'user');
             
@@ -684,132 +736,5 @@
             const historyList = document.getElementById('chat-history-list');
             historyList.innerHTML = '';
 
-            listaChats.forEach(chat => {
-                const item = document.createElement('div');
-                item.className = `chat-history-item ${chat.id === chatActualId ? 'active' : ''}`;
-                item.innerHTML = `<i class="fa-regular fa-message"></i> <span>${chat.titulo}</span>`;
-                item.onclick = () => {
-                    cambiarChat(chat.id);
-                    if (window.innerWidth <= 768) toggleSidebar();
-                };
-                historyList.appendChild(item);
-            });
-        }
-
-        function agregarBloqueUI(autor, texto, scroll = true) {
-            const container = document.getElementById('session-container');
-            const isUser = autor === 'user';
-
-            const block = document.createElement('div');
-            block.className = `session-block ${isUser ? 'user-entry' : 'kumi-entry'}`;
-
-            const header = document.createElement('div');
-            header.className = 'block-header';
-            header.innerHTML = `
-                <span class="block-author">${isUser ? 'Tu Registro' : 'Orientación de Kumi'}</span>
-                <span class="block-role">• ${isUser ? 'Usuario' : 'Asistente PAP'}</span>
-            `;
-
-            const body = document.createElement('div');
-            body.className = 'block-body';
-            body.innerHTML = texto
-                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-
-            block.appendChild(header);
-            block.appendChild(body);
-            container.appendChild(block);
-            if (scroll) {
-                container.scrollTop = container.scrollHeight;
-            }
-        }
-
-        function mostrarIndicador() {
-            const container = document.getElementById('session-container');
-            const ind = document.createElement('div');
-            ind.id = 'analyzing-indicator';
-            ind.className = 'analyzing-indicator';
-            ind.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="color: var(--kumi-accent);"></i> Kumi está procesando tu mensaje con contención...`;
-            container.appendChild(ind);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function ocultarIndicador() {
-            const ind = document.getElementById('analyzing-indicator');
-            if (ind) ind.remove();
-        }
-
-        function enviarSugerencia(texto) {
-            const input = document.getElementById('user-input');
-            input.value = texto;
-            autoResize(input);
-            const form = input.closest('form');
-            if (form) {
-                form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
-            }
-        }
-
-        async function enviarEntrada(event) {
-            event.preventDefault();
-            if (isProcessing) return;
-
-            const input = document.getElementById('user-input');
-            const texto = input.value.trim();
-            if (!texto) return;
-
-            // Transicionar de bienvenida a chat al enviar el primer mensaje
-            const mainApp = document.getElementById('main-app');
-            if (mainApp.classList.contains('state-welcome')) {
-                mainApp.classList.remove('state-welcome');
-                mainApp.classList.add('state-chat');
-            }
-
-            isProcessing = true;
-            input.value = '';
-            input.style.height = 'auto';
-
-            const chatObj = listaChats.find(c => c.id === chatActualId);
-            if (!chatObj) return;
-
-            if (chatObj.titulo === 'Nueva conversación') {
-                chatObj.titulo = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
-                renderizarListaChats();
-            }
-
-            agregarBloqueUI('user', texto);
-            chatObj.historial.push({ role: 'user', content: texto });
-
-            mostrarIndicador();
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: chatObj.historial })
-                });
-
-                const data = await response.json();
-                ocultarIndicador();
-
-                if (data.choices && data.choices[0]) {
-                    const respuesta = data.choices[0].message.content;
-                    agregarBloqueUI('kumi', respuesta);
-                    chatObj.historial.push({ role: 'assistant', content: respuesta });
-                } else {
-                    const fallback = 'Ha ocurrido un inconveniente al generar la orientación. Por favor, intenta de nuevo.';
-                    agregarBloqueUI('kumi', fallback);
-                    chatObj.historial.push({ role: 'assistant', content: fallback });
-                }
-            } catch (error) {
-                ocultarIndicador();
-                const fallback = 'Error de conexión con el servidor de acompañamiento.';
-                agregarBloqueUI('kumi', fallback);
-                chatObj.historial.push({ role: 'assistant', content: fallback });
-            } finally {
-                isProcessing = false;
-            }
-        }
-    </script>
-</body>
-</html>
+            // Solo mostrar en el sidebar aquellos chats que ya tengan al menos un mensaje del usuario
+            const chatsConMensajes = listaChats.filter(chat => chat.historial.some(

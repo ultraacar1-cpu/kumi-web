@@ -86,7 +86,7 @@
             z-index: 100;
         }
 
-        /* Colapso de Sidebar en Escritorio */
+        /* Colapso del Sidebar en Escritorio */
         aside.collapsed {
             margin-left: -310px;
         }
@@ -99,7 +99,15 @@
             overflow: hidden;
         }
 
+        /* Brand Header con Botón Colapsar dentro del Sidebar */
         .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .brand-info {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -122,6 +130,25 @@
         .brand-title h1 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
         .brand-title p { font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .status-dot { width: 7px; height: 7px; background-color: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
+
+        /* Botón dentro del Sidebar (Donde lo marcaste en rojo) */
+        .btn-collapse-sidebar {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-collapse-sidebar:hover {
+            color: var(--text-primary);
+            background-color: var(--chat-item-hover);
+        }
 
         .btn-session {
             background: var(--btn-bg);
@@ -162,7 +189,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Ítem de Conversación en el Sidebar */
+        /* Lista de Chats */
         .chat-history-item {
             padding: 8px 10px;
             border-radius: 10px;
@@ -174,7 +201,6 @@
             justify-content: space-between;
             gap: 8px;
             transition: background 0.2s;
-            position: relative;
         }
         .chat-history-item:hover { background-color: var(--chat-item-hover); }
         .chat-history-item.active { 
@@ -199,7 +225,6 @@
             flex: 1;
         }
 
-        /* Botón Lápiz para Editar Título */
         .btn-edit-title {
             background: transparent;
             border: none;
@@ -218,7 +243,6 @@
             background-color: rgba(0, 0, 0, 0.05);
         }
 
-        /* Campo Input para Edición de Título In-Situ */
         .edit-title-input {
             width: 100%;
             background: var(--bg-canvas);
@@ -277,7 +301,6 @@
         
         .header-actions { display: flex; align-items: center; gap: 10px; }
         
-        /* Botones del Header (Ocultar Menú y Cambiar Tema) */
         .btn-header-action {
             background: var(--bg-canvas);
             border: 1px solid var(--border-subtle);
@@ -294,6 +317,27 @@
         }
         .btn-header-action:hover { background: var(--border-subtle); transform: translateY(-1px); }
 
+        /* Botón para volver a desplegar el sidebar cuando está colapsado */
+        .btn-expand-desktop {
+            display: none;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            margin-right: 4px;
+        }
+        .btn-expand-desktop:hover {
+            background-color: var(--chat-item-hover);
+        }
+
+        /* Solo mostrar botón de expandir en PC si el sidebar está colapsado */
+        body:has(aside.collapsed) .btn-expand-desktop {
+            display: flex !important;
+        }
+
         .tag-beta { background-color: var(--bg-canvas); color: var(--text-primary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
 
         .btn-menu-mobile {
@@ -306,7 +350,7 @@
             padding: 4px;
         }
 
-        /* Viewport y Contenedores */
+        /* Viewport y Chat */
         .chat-viewport {
             flex: 1;
             display: flex;
@@ -315,7 +359,6 @@
             overflow: hidden;
         }
 
-        /* Welcome Screen */
         .welcome-screen {
             position: absolute;
             inset: 0;
@@ -346,29 +389,10 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
 
-        .welcome-screen h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-        }
+        .welcome-screen h1 { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+        .welcome-screen p { font-size: 15px; color: var(--text-muted); max-width: 480px; line-height: 1.5; margin-bottom: 24px; }
 
-        .welcome-screen p {
-            font-size: 15px;
-            color: var(--text-muted);
-            max-width: 480px;
-            line-height: 1.5;
-            margin-bottom: 24px;
-        }
-
-        .quick-prompts {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 540px;
-        }
-
+        .quick-prompts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 540px; }
         .prompt-chip {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -381,12 +405,7 @@
             transition: all 0.2s;
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .prompt-chip:hover {
-            border-color: var(--focus-border);
-            background: var(--chat-item-hover);
-            color: var(--text-primary);
-            transform: translateY(-1px);
-        }
+        .prompt-chip:hover { border-color: var(--focus-border); background: var(--chat-item-hover); color: var(--text-primary); transform: translateY(-1px); }
 
         #session-container {
             flex: 1;
@@ -412,37 +431,16 @@
             width: 82%;
         }
 
-        .session-block.user-entry {
-            background-color: var(--user-bg);
-            border: 1px solid var(--user-border);
-            border-right: 5px solid var(--user-accent);
-            margin-left: auto; 
-        }
-
-        .session-block.kumi-entry {
-            background-color: var(--kumi-bg);
-            border: 1px solid var(--kumi-border);
-            border-left: 5px solid var(--kumi-accent);
-            margin-right: auto; 
-        }
+        .session-block.user-entry { background-color: var(--user-bg); border: 1px solid var(--user-border); border-right: 5px solid var(--user-accent); margin-left: auto; }
+        .session-block.kumi-entry { background-color: var(--kumi-bg); border: 1px solid var(--kumi-border); border-left: 5px solid var(--kumi-accent); margin-right: auto; }
 
         .block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .block-author { font-size: 13px; font-weight: 700; color: var(--text-primary); }
         .block-role { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
         .block-body { font-size: 14.5px; line-height: 1.55; color: var(--text-secondary); }
 
-        .analyzing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: var(--text-muted);
-            padding: 8px 12px;
-            font-weight: 500;
-            margin-right: auto;
-        }
+        .analyzing-indicator { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); padding: 8px 12px; font-weight: 500; margin-right: auto; }
 
-        /* Footer y Barra de Entrada Centrada */
         footer {
             padding: 16px;
             background-color: var(--bg-canvas);
@@ -467,90 +465,28 @@
             align-items: center;
             transition: all 0.3s;
         }
-        .input-container:focus-within {
-            border-color: var(--focus-border);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-        }
-        .input-container textarea {
-            flex: 1;
-            border: none;
-            outline: none;
-            resize: none;
-            height: 24px;
-            max-height: 100px;
-            font-size: 15px;
-            color: var(--text-primary);
-            background: transparent;
-        }
+        .input-container:focus-within { border-color: var(--focus-border); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1); }
+        .input-container textarea { flex: 1; border: none; outline: none; resize: none; height: 24px; max-height: 100px; font-size: 15px; color: var(--text-primary); background: transparent; }
         
-        .btn-send {
-            background: var(--btn-bg);
-            color: white;
-            border: none;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
+        .btn-send { background: var(--btn-bg); color: white; border: none; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
 
-        /* LÓGICA DE ESTADOS EN CSS */
-        main.state-welcome .welcome-screen {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-        }
-        main.state-welcome #session-container {
-            display: none;
-        }
+        main.state-welcome .welcome-screen { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        main.state-welcome #session-container { display: none; }
 
-        main.state-chat .welcome-screen {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-20px);
-        }
-        main.state-chat #session-container {
-            display: flex;
-        }
+        main.state-chat .welcome-screen { opacity: 0; pointer-events: none; transform: translateY(-20px); }
+        main.state-chat #session-container { display: flex; }
 
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(2px);
-            z-index: 90;
-        }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 90; }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
-            aside {
-                position: fixed;
-                top: 0;
-                left: 0;
-                bottom: 0;
-                transform: translateX(-100%);
-                margin-left: 0 !important;
-            }
-            aside.open {
-                transform: translateX(0);
-            }
-            .sidebar-overlay.active {
-                display: block;
-            }
-            .btn-menu-mobile {
-                display: block;
-            }
-            .btn-toggle-desktop {
-                display: none !important;
-            }
+            aside { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); margin-left: 0 !important; }
+            aside.open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .btn-menu-mobile { display: block; }
+            .btn-expand-desktop, .btn-collapse-sidebar { display: none !important; }
             header { padding: 0 16px; }
             header h2 { font-size: 14px; }
             #session-container { padding: 14px; }
@@ -565,12 +501,19 @@
 
     <aside id="sidebar">
         <div class="sidebar-top">
+            <!-- Header del Sidebar con el botón para ocultar exactamente en el lugar indicado -->
             <div class="brand-header">
-                <div class="brand-avatar">K</div>
-                <div class="brand-title">
-                    <h1>Kumi AI</h1>
-                    <p><span class="status-dot"></span> Módulo PAP Activo</p>
+                <div class="brand-info">
+                    <div class="brand-avatar">K</div>
+                    <div class="brand-title">
+                        <h1>Kumi AI</h1>
+                        <p><span class="status-dot"></span> Módulo PAP Activo</p>
+                    </div>
                 </div>
+                <!-- Botón ocultar (Sección del círculo rojo) -->
+                <button class="btn-collapse-sidebar" onclick="toggleDesktopSidebar()" title="Ocultar menú">
+                    <i class="fa-solid fa-sidebar"></i>
+                </button>
             </div>
 
             <button onclick="crearNuevoChat(); toggleSidebarIfMobile();" class="btn-session">
@@ -596,13 +539,13 @@
                 <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
                     <i class="fa-solid fa-bars"></i>
                 </button>
+                <!-- Botón para volver a abrir el menú cuando está colapsado -->
+                <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú">
+                    <i class="fa-solid fa-sidebar"></i>
+                </button>
                 <h2>Acompañamiento & PAP</h2>
             </div>
             <div class="header-actions">
-                <!-- Botón Desktop para Ocultar/Mostrar el Menú Lateral -->
-                <button class="btn-header-action btn-toggle-desktop" onclick="toggleDesktopSidebar()" title="Alternar Menú Lateral" aria-label="Ocultar menú">
-                    <i id="sidebar-toggle-icon" class="fa-solid fa-sidebar"></i>
-                </button>
                 <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
@@ -646,7 +589,6 @@
             document.body.setAttribute('data-theme', savedTheme);
             actualizarIconoTema(savedTheme);
 
-            // Cargar estado guardado del menú lateral en PC
             const sidebarCollapsed = localStorage.getItem('kumi_sidebar_collapsed') === 'true';
             if (sidebarCollapsed && window.innerWidth > 768) {
                 document.getElementById('sidebar').classList.add('collapsed');
@@ -679,7 +621,6 @@
             icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         }
 
-        /* Ocultar/Mostrar Menú Lateral en Escritorio */
         function toggleDesktopSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('collapsed');
@@ -687,7 +628,6 @@
             localStorage.setItem('kumi_sidebar_collapsed', isCollapsed);
         }
 
-        /* Menú Mobile */
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('active');
@@ -726,7 +666,7 @@
 
         function cambiarChat(id) {
             chatActualId = id;
-            editingChatId = null; // Cancelar modo edición si cambiamos de chat
+            editingChatId = null;
             const chatObj = listaChats.find(c => c.id === id);
             if (!chatObj) return;
 
@@ -749,9 +689,8 @@
             renderizarListaChats();
         }
 
-        /* Edición de Nombre de Conversación */
         function activarEdicionTitulo(e, id) {
-            e.stopPropagation(); // Evitar cambiar de chat al presionar el lápiz
+            e.stopPropagation();
             editingChatId = id;
             renderizarListaChats();
         }
@@ -776,7 +715,6 @@
                 item.className = `chat-history-item ${chat.id === chatActualId ? 'active' : ''}`;
 
                 if (editingChatId === chat.id) {
-                    // Modo Edición In-Situ
                     item.innerHTML = `
                         <input type="text" class="edit-title-input" value="${chat.titulo.replace(/"/g, '&quot;')}" id="input-edit-${chat.id}">
                     `;
@@ -804,7 +742,6 @@
                     }, 50);
 
                 } else {
-                    // Modo Normal con Botón de Lápiz
                     item.innerHTML = `
                         <div class="chat-item-main">
                             <i class="fa-regular fa-message"></i> 
@@ -888,7 +825,6 @@
             const texto = input.value.trim();
             if (!texto) return;
 
-            // Cambiar vista de pantalla de bienvenida a chat
             const mainApp = document.getElementById('main-app');
             mainApp.classList.remove('state-welcome');
             mainApp.classList.add('state-chat');

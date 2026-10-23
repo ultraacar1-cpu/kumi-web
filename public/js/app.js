@@ -382,6 +382,32 @@ function detenerReconocimiento() {
     if (input) input.placeholder = 'Escribe aquí lo que estás sintiendo...';
 }
 
+/* ---------- Síntesis de Voz (Bocina en mensajes de Kumi) ---------- */
+function leerTexto(texto, botonElement) {
+    if (!('speechSynthesis' in window)) {
+        alert('Lo siento, tu navegador no soporta la síntesis de voz.');
+        return;
+    }
+
+    // Cancelar cualquier audio anterior que se esté reproduciendo
+    window.speechSynthesis.cancel();
+
+    // Limpiar etiquetas HTML y asteriscos para que la voz lea de forma natural
+    const textoLimpio = texto.replace(/\*\*/g, '').replace(/<[^>]*>/g, '');
+
+    const utterance = new SpeechSynthesisUtterance(textoLimpio);
+    utterance.lang = 'es-ES'; // Configurado en español
+    utterance.rate = 1.0;     // Velocidad normal
+
+    if (botonElement) {
+        botonElement.classList.add('speaking');
+        utterance.onend = () => botonElement.classList.remove('speaking');
+        utterance.onerror = () => botonElement.classList.remove('speaking');
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
 /* ---------- Mensajes en pantalla ---------- */
 function agregarBloqueUI(autor, texto, scroll = true) {
     const container = document.getElementById('session-container');
@@ -396,11 +422,21 @@ function agregarBloqueUI(autor, texto, scroll = true) {
     nombre.className = 'block-author';
     nombre.textContent = isUser ? 'Tú' : 'Kumi';
     header.appendChild(nombre);
+    
     if (!isUser) {
         const rol = document.createElement('span');
         rol.className = 'block-role';
         rol.textContent = '• IA';
         header.appendChild(rol);
+
+        // Botón de la bocina en la esquina superior derecha
+        const btnSpeech = document.createElement('button');
+        btnSpeech.className = 'btn-speech';
+        btnSpeech.title = 'Escuchar mensaje';
+        btnSpeech.setAttribute('aria-label', 'Escuchar mensaje de Kumi');
+        btnSpeech.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        btnSpeech.onclick = () => leerTexto(texto, btnSpeech);
+        block.appendChild(btnSpeech);
     }
 
     // Se escapa todo el HTML y solo se permite **negrita**.

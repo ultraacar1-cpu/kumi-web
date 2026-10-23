@@ -321,6 +321,67 @@ function renderizarListaChats() {
     }
 }
 
+/* ---------- Reconocimiento de Voz (Micrófono) ---------- */
+let recognition = null;
+let isListening = false;
+
+function toggleSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+        alert('Lo siento, tu navegador no soporta reconocimiento de voz.');
+        return;
+    }
+
+    const micButton = document.getElementById('mic-button');
+    const input = document.getElementById('user-input');
+
+    if (isListening) {
+        if (recognition) recognition.stop();
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES'; // Configurado en español
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+        isListening = true;
+        micButton.classList.add('listening');
+        input.placeholder = 'Escuchando... habla ahora';
+    };
+
+    recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        input.value = transcript;
+        autoResize(input);
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Error en reconocimiento de voz:', event.error);
+        detenerReconocimiento();
+    };
+
+    recognition.onend = () => {
+        detenerReconocimiento();
+    };
+
+    recognition.start();
+}
+
+function detenerReconocimiento() {
+    isListening = false;
+    const micButton = document.getElementById('mic-button');
+    const input = document.getElementById('user-input');
+    
+    if (micButton) micButton.classList.remove('listening');
+    if (input) input.placeholder = 'Escribe aquí lo que estás sintiendo...';
+}
+
 /* ---------- Mensajes en pantalla ---------- */
 function agregarBloqueUI(autor, texto, scroll = true) {
     const container = document.getElementById('session-container');

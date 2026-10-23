@@ -4,6 +4,7 @@ let listaChats = [];
 let chatActualId = null;
 let isProcessing = false;
 let editingChatId = null;
+let openContextMenuChatId = null;
 
 /* ---------- Almacenamiento local (puede fallar en modo privado) ---------- */
 function leerLocal(clave, porDefecto) {
@@ -70,7 +71,7 @@ function autoResize(textarea) {
     textarea.style.height = textarea.scrollHeight + 'px';
 }
 
-/* ---------- Chats ---------- */
+/* ---------- Chats y Menú Contextual ---------- */
 function crearNuevoChat() {
     if (chatActualId) {
         const chatActual = listaChats.find(c => c.id === chatActualId);
@@ -81,13 +82,14 @@ function crearNuevoChat() {
     }
 
     const nuevoId = 'chat_' + Date.now();
-    listaChats.unshift({ id: nuevoId, titulo: 'Nueva conversación', historial: [] });
+    listaChats.unshift({ id: nuevoId, titulo: 'Nueva conversación', historial: [], favorito: false });
     cambiarChat(nuevoId);
 }
 
 function cambiarChat(id) {
     chatActualId = id;
     editingChatId = null;
+    openContextMenuChatId = null;
     const chatObj = listaChats.find(c => c.id === id);
     if (!chatObj) return;
 
@@ -97,6 +99,12 @@ function cambiarChat(id) {
     chatObj.historial.forEach(msg => {
         agregarBloqueUI(msg.role === 'user' ? 'user' : 'kumi', msg.content, false);
     });
+
+    // Actualizar título dinámico en el Header superior
+    const titleEl = document.getElementById('current-chat-title');
+    if (titleEl) {
+        titleEl.textContent = chatObj.titulo;
+    }
 
     const mainApp = document.getElementById('main-app');
     if (chatObj.historial.length > 0) {
@@ -111,9 +119,48 @@ function cambiarChat(id) {
     renderizarListaChats();
 }
 
+function toggleContextMenu(e, id) {
+    e.stopPropagation();
+    openContextMenuChatId = openContextMenuChatId === id ? null : id;
+    renderizarListaChats();
+}
+
+function cerrarMenuContextual(e) {
+    if (openContextMenuChatId !== null) {
+        openContextMenuChatId = null;
+        renderizarListaChats();
+    }
+}
+
+function alternarFavorito(e, id) {
+    e.stopPropagation();
+    const chat = listaChats.find(c => c.id === id);
+    if (chat) {
+        chat.favorito = !chat.favorito;
+    }
+    openContextMenuChatId = null;
+    renderizarListaChats();
+}
+
+function borrarChat(e, id) {
+    e.stopPropagation();
+    listaChats = listaChats.filter(c => c.id !== id);
+    openContextMenuChatId = null;
+    if (chatActualId === id) {
+        if (listaChats.length > 0) {
+            cambiarChat(listaChats[0].id);
+        } else {
+            crearNuevoChat();
+        }
+    } else {
+        renderizarListaChats();
+    }
+}
+
 function activarEdicionTitulo(e, id) {
     e.stopPropagation();
     editingChatId = id;
+    openContextMenuChatId = null;
     renderizarListaChats();
 }
 
@@ -121,19 +168,25 @@ function guardarNuevoTitulo(id, nuevoTexto) {
     const chatObj = listaChats.find(c => c.id === id);
     if (chatObj && nuevoTexto.trim() !== '') {
         chatObj.titulo = nuevoTexto.trim();
+        if (chatActualId === id) {
+            const titleEl = document.getElementById('current-chat-title');
+            if (titleEl) titleEl.textContent = chatObj.titulo;
+        }
     }
     editingChatId = null;
     renderizarListaChats();
 }
 
-// Los títulos vienen de lo que escribe el usuario, así que se insertan con textContent (nunca innerHTML).
+// Renderizado de la lista de chats con secciones de Favoritos y Recientes
 function renderizarListaChats() {
     const historyList = document.getElementById('chat-history-list');
     historyList.innerHTML = '';
 
     const visibles = listaChats.filter(chat => chat.historial.length > 0 || chat.id === chatActualId);
+    const favoritos = visibles.filter(c => c.favorito);
+    const recientes = visibles.filter(c => !c.favorito);
 
-    visibles.forEach(chat => {
+    const crearItemDOM = (chat) => {
         const item = document.createElement('div');
         item.className = 'chat-history-item' + (chat.id === chatActualId ? ' active' : '');
         let inputEdit = null;
@@ -174,26 +227,98 @@ function renderizarListaChats() {
             titulo.textContent = chat.titulo;
             main.append(icono, titulo);
 
-            const btnEditar = document.createElement('button');
-            btnEditar.className = 'btn-edit-title';
-            btnEditar.title = 'Editar nombre';
-            btnEditar.setAttribute('aria-label', 'Editar nombre de la conversación');
-            btnEditar.innerHTML = '<i class="fa-solid fa-pen"></i>';
-            btnEditar.addEventListener('click', e => activarEdicionTitulo(e, chat.id));
+            // Botón de configuración con la ruedita (⚙️)
+            const btnConfig = document.createElement('button');
+            btnConfig.className = 'btn-chat-config' + (openContextMenuChatId === chat.id ? ' active' : '');
+            btnConfig.title = 'Configurar chat';
+            btnConfig.setAttribute('aria-label', 'Configurar conversación');
+            btnConfig.innerHTML = '<i class="fa-solid fa-gear"></i>';
+            btnConfig.addEventListener('click', e => toggleContextMenu(e, chat.id));
 
-            item.append(main, btnEditar);
+            item.append(main, btnConfig);
+
+            // Menú contextual desplegable si está abierto
+            if (openContextMenuChatId === chat.id) {
+                const menu = document.createElement('div');
+                menu.className = 'chat-context-menu';
+                menu.onclick = e => e.stopPropagation();
+
+                const btnEditar = document.createElement('button');
+                btnEditar.className = 'menu-option';
+                btnEditar.innerHTML = '<i class="fa-solid fa-pen"></i> Editar nombre';
+                btnEditar.onclick = e => activarEdicionTitulo(e, chat.id);
+
+                const btnFav = document.createElement('button');
+                btnFav.className = 'menu-option';
+                btnFav.innerHTML = `<i class="${chat.favorito ? 'fa-solid fa-star' : 'fa-regular fa-star'}" style="color: #eab308;"></i> ${chat.favorito ? 'Quitar favorito' : 'Favorito'}`;
+                btnFav.onclick = e => alternarFavorito(e, chat.id);
+
+                const btnBorrar = document.createElement('button');
+                btnBorrar.className = 'menu-option danger';
+                btnBorrar.innerHTML = '<i class="fa-solid fa-trash"></i> Borrar';
+                btnBorrar.onclick = e => borrarChat(e, chat.id);
+
+                menu.append(btnEditar, btnFav, btnBorrar);
+                item.appendChild(menu);
+            }
+
             item.onclick = () => {
                 cambiarChat(chat.id);
                 toggleSidebarIfMobile();
             };
         }
 
-        historyList.appendChild(item);
-        if (inputEdit) {
-            inputEdit.focus();
-            inputEdit.select();
+        return { item, inputEdit };
+    };
+
+    // Renderizar grupo de Favoritos si existen
+    if (favoritos.length > 0) {
+        const favGroup = document.createElement('div');
+        favGroup.className = 'chat-section-group';
+        const favTitle = document.createElement('div');
+        favTitle.className = 'chat-history-title';
+        favTitle.innerHTML = '<i class="fa-solid fa-star" style="color: #eab308;"></i> Favoritos';
+        favGroup.appendChild(favTitle);
+
+        favoritos.forEach(chat => {
+            const { item, inputEdit } = crearItemDOM(chat);
+            favGroup.appendChild(item);
+            if (inputEdit) {
+                setTimeout(() => {
+                    inputEdit.focus();
+                    inputEdit.select();
+                }, 50);
+            }
+        });
+        historyList.appendChild(favGroup);
+    }
+
+    // Renderizar grupo de Recientes / Conversaciones
+    if (recientes.length > 0) {
+        const recGroup = document.createElement('div');
+        recGroup.className = 'chat-section-group';
+        const recTitle = document.createElement('div');
+        recTitle.className = 'chat-history-title';
+        if (favoritos.length > 0) {
+            recTitle.style.marginTop = '8px';
+            recTitle.innerHTML = '<i class="fa-solid fa-clock"></i> Recientes';
+        } else {
+            recTitle.textContent = 'Conversaciones';
         }
-    });
+        recGroup.appendChild(recTitle);
+
+        recientes.forEach(chat => {
+            const { item, inputEdit } = crearItemDOM(chat);
+            recGroup.appendChild(item);
+            if (inputEdit) {
+                setTimeout(() => {
+                    inputEdit.focus();
+                    inputEdit.select();
+                }, 50);
+            }
+        });
+        historyList.appendChild(recGroup);
+    }
 }
 
 /* ---------- Mensajes en pantalla ---------- */
@@ -247,7 +372,6 @@ function ocultarIndicador() {
     if (ind) ind.remove();
 }
 
-// Los errores solo se muestran: NO se guardan en el historial, para no contaminar lo que se envía a la IA.
 function mostrarError(chatObj, mensaje) {
     if (chatActualId === chatObj.id) {
         agregarBloqueUI('kumi', `${mensaje}\n\n${AYUDA_TEXTO}`);
@@ -273,7 +397,6 @@ async function enviarEntrada(event) {
     const texto = input.value.trim();
     if (!texto) return;
 
-    // Se valida ANTES de marcar "procesando", para no dejar el chat bloqueado si algo falla.
     const chatObj = listaChats.find(c => c.id === chatActualId);
     if (!chatObj) return;
 
@@ -287,6 +410,10 @@ async function enviarEntrada(event) {
 
     if (chatObj.titulo === 'Nueva conversación') {
         chatObj.titulo = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
+        const titleEl = document.getElementById('current-chat-title');
+        if (titleEl && chatActualId === chatObj.id) {
+            titleEl.textContent = chatObj.titulo;
+        }
     }
 
     agregarBloqueUI('user', texto);
@@ -308,7 +435,6 @@ async function enviarEntrada(event) {
 
         if (response.ok && typeof data.reply === 'string' && data.reply.trim()) {
             chatObj.historial.push({ role: 'assistant', content: data.reply });
-            // Si la persona cambió de chat mientras esperaba, la respuesta queda guardada en su chat original.
             if (chatActualId === chatObj.id) agregarBloqueUI('kumi', data.reply);
         } else {
             mostrarError(chatObj, data.error || 'No pude responderte en este momento.');

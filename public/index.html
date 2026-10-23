@@ -48,24 +48,25 @@
     </aside>
 
     <main id="main-app" class="state-welcome">
-        <header>
-            <div class="header-title-group">
-                <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
-                <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
-                    <i class="fa-solid fa-table-columns"></i>
-                </button>
-                <!-- Título dinámico del chat actual -->
-                <h2 id="current-chat-title">Nueva conversación</h2>
-            </div>
-            <div class="header-actions">
-                <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
-                    <i id="theme-icon" class="fa-solid fa-moon"></i>
-                </button>
-                <span class="tag-beta">Beta 2.5</span>
-            </div>
-        </header>
+       <header>
+    <div class="header-title-group">
+        <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-title-wrapper">
+            <h2 id="current-chat-title">Nueva conversación</h2>
+            <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
+                <i class="fa-solid fa-table-columns"></i> Mostrar menú lateral
+            </button>
+        </div>
+    </div>
+    <div class="header-actions">
+        <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+        <span class="tag-beta">Beta 2.5</span>
+    </div>
+</header>
 
         <div class="chat-viewport">
             <div id="welcome-screen" class="welcome-screen">

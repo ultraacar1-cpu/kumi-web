@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body data-theme="light">
+<body data-theme="light" onclick="cerrarMenuContextual(event)">
 
     <div id="overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -33,7 +33,7 @@
                 <i class="fa-solid fa-plus"></i> Nuevo Chat
             </button>
 
-            <div class="chat-history-title">Conversaciones</div>
+            <!-- Contenedor donde se renderizan Favoritos y Recientes -->
             <div id="chat-history-list" class="chat-history-container"></div>
         </div>
 
@@ -53,16 +53,17 @@
                 <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                    <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
+                <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
                     <i class="fa-solid fa-table-columns"></i>
                 </button>
-                <h2>Acompañamiento & PAP</h2>
+                <!-- Título dinámico del chat actual -->
+                <h2 id="current-chat-title">Nueva conversación</h2>
             </div>
             <div class="header-actions">
                 <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
                     <i id="theme-icon" class="fa-solid fa-moon"></i>
                 </button>
-                <span class="tag-beta">Beta 2</span>
+                <span class="tag-beta">Beta 2.5</span>
             </div>
         </header>
 

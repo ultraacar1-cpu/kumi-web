@@ -48,25 +48,25 @@
     </aside>
 
     <main id="main-app" class="state-welcome">
-       <header>
-    <div class="header-title-group">
-        <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-        <div class="header-title-wrapper">
-            <h2 id="current-chat-title">Nueva conversación</h2>
-            <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
-                <i class="fa-solid fa-table-columns"></i> Mostrar menú lateral
-            </button>
-        </div>
-    </div>
-    <div class="header-actions">
-        <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
-            <i id="theme-icon" class="fa-solid fa-moon"></i>
-        </button>
-        <span class="tag-beta">Beta 2.5</span>
-    </div>
-</header>
+        <header>
+            <div class="header-title-group">
+                <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="header-title-wrapper">
+                    <h2 id="current-chat-title">Nueva conversación</h2>
+                    <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú" aria-label="Mostrar menú">
+                        <i class="fa-solid fa-table-columns"></i> Mostrar menú lateral
+                    </button>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <span class="tag-beta">Beta 2.5</span>
+            </div>
+        </header>
 
         <div class="chat-viewport">
             <div id="welcome-screen" class="welcome-screen">
@@ -86,6 +86,10 @@
         <footer>
             <form onsubmit="enviarEntrada(event)" class="input-container">
                 <textarea id="user-input" placeholder="Escribe aquí lo que estás sintiendo..." rows="1" maxlength="2000" aria-label="Escribe tu mensaje" oninput="autoResize(this)"></textarea>
+                <!-- Botón de Micrófono añadido -->
+                <button type="button" id="mic-button" class="btn-mic" onclick="toggleSpeechRecognition()" aria-label="Hablar por micrófono" title="Hablar por micrófono">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
                 <button type="submit" id="send-button" class="btn-send" aria-label="Enviar mensaje">
                     <i class="fa-solid fa-arrow-up"></i>
                 </button>

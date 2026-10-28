@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="UOm9Q28WwTJGgClgwACC9DC4hpbiPBWnIkmvp2KrCU0" />
+    <title>Kumi AI - Asistente de apoyo emocional</title>
+    <meta name="description" content="Kumi es una IA de apoyo emocional inspirada en los Primeros Auxilios Psicológicos. No reemplaza a un profesional de la salud mental.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body data-theme="light" onclick="cerrarMenuContextual(event)">
+
+    <div id="overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="collapsed">
+        <div class="sidebar-top">
+            <div class="brand-header">
+                <div class="brand-info">
+                    <div class="brand-avatar">K</div>
+                    <div class="brand-title">
+                        <h1>Kumi AI</h1>
+                        <p><span class="status-dot"></span> IA de apoyo emocional</p>
+                    </div>
+                </div>
+                <button class="btn-collapse-sidebar" onclick="toggleDesktopSidebar()" title="Ocultar menú" aria-label="Ocultar menú">
+                    <i class="fa-solid fa-table-columns"></i>
+                </button>
+            </div>
+
+            <button onclick="crearNuevoChat(); toggleSidebarIfMobile();" class="btn-session">
+                <i class="fa-solid fa-plus"></i> Nuevo Chat
+            </button>
+
+            <!-- Contenedor donde se renderizan Favoritos y Recientes -->
+            <div id="chat-history-list" class="chat-history-container"></div>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="helpline-box">
+                <h4>Líneas de Crisis</h4>
+                <div class="helpline-item"><span>Salud mental (24 h):</span> <a href="tel:106">106</a></div>
+                <div class="helpline-item"><span>Emergencias:</span> <a href="tel:123">123</a></div>
+                <p class="helpline-note">Si estás en peligro inmediato, llama al 123.</p>
+            </div>
+        </div>
+    </aside>
+
+    <main id="main-app" class="state-welcome is-booting">
+        <!-- Difuminado superior: oculta las letras que suben bajo los controles -->
+        <div class="top-fade" aria-hidden="true"></div>
+
+        <!-- Controles flotantes (ya no hay barra) -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="btn-menu-mobile" onclick="toggleSidebar()" aria-label="Abrir menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <button class="btn-expand-desktop" onclick="toggleDesktopSidebar()" title="Mostrar menú lateral" aria-label="Mostrar menú lateral">
+                    <i class="fa-solid fa-table-columns"></i>
+                </button>
+                <h2 id="current-chat-title" class="header-title">Nueva conversación</h2>
+            </div>
+            <div class="header-actions">
+                <button class="btn-header-action" onclick="toggleTheme()" aria-label="Cambiar modo oscuro">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <span class="tag-beta">Beta 2.5</span>
+            </div>
+        </header>
+
+        <div class="chat-viewport">
+            <div id="session-container" role="log" aria-live="polite" aria-label="Conversación con Kumi"></div>
+        </div>
+
+        <footer>
+            <!-- Todo lo que sube al centro en la pantalla de inicio: logo + globo, cuadro de texto y sugerencias -->
+            <div id="composer" class="composer">
+                <div id="welcome-hero" class="welcome-hero">
+                    <div id="kumi-bubble" class="kumi-bubble" aria-live="polite">
+                        <span id="kumi-bubble-text"></span>
+                    </div>
+                    <div class="logo-float">
+                        <button type="button" id="kumi-logo" class="kumi-logo oculto" aria-label="Kumi. Tócala para escuchar otro mensaje">K</button>
+                    </div>
+                </div>
+
+                <form onsubmit="enviarEntrada(event)" class="input-container">
+                    <textarea id="user-input" placeholder="Escribe aquí lo que estás sintiendo..." rows="1" maxlength="2000" aria-label="Escribe tu mensaje" oninput="autoResize(this)"></textarea>
+                    <button type="button" id="mic-button" class="btn-mic" onclick="toggleSpeechRecognition()" aria-label="Hablar por micrófono" title="Hablar por micrófono">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button type="submit" id="send-button" class="btn-send" aria-label="Enviar mensaje">
+                        <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                </form>
+
+                <div id="quick-prompts" class="quick-prompts" aria-label="Ideas para empezar"></div>
+            </div>
+
+            <p class="ai-disclaimer">
+                Kumi es una IA y puede equivocarse. No reemplaza a un profesional de la salud mental.
+                Tus mensajes se procesan con un proveedor externo de IA.
+                <a href="/privacidad.html" target="_blank" rel="noopener">Privacidad y términos</a>
+            </p>
+        </footer>
+    </main>
+
+    <script src="/js/app.js" defer></script>
+</body>
+</html>

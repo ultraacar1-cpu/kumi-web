@@ -55,14 +55,24 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ---------- Tema y menú lateral ---------- */
 function toggleTheme() {
     const html = document.documentElement;
-    const newTheme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
 
-    // Mientras dura el cambio, el CSS fuerza la misma duración y curva en TODOS los elementos
+    const aplicar = () => {
+        const nuevo = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', nuevo);
+        guardarLocal('kumi_theme', nuevo);
+        actualizarIconoTema(nuevo, true);
+    };
+
+    // Lo ideal: el navegador fotografía la pantalla antes y después y mezcla las dos imágenes con la tarjeta
+    // gráfica. Es uniforme por construcción y no se traba aunque haya muchos mensajes en pantalla.
+    if (typeof document.startViewTransition === 'function' && !reducirMovimiento()) {
+        document.startViewTransition(aplicar);
+        return;
+    }
+
+    // Respaldo para navegadores sin esa función: el CSS fuerza la misma duración y curva en todos los elementos
     html.classList.add('theme-switching');
-    document.body.setAttribute('data-theme', newTheme);
-    guardarLocal('kumi_theme', newTheme);
-    actualizarIconoTema(newTheme, true);
-
+    aplicar();
     clearTimeout(timerTema);
     timerTema = setTimeout(() => html.classList.remove('theme-switching'), 650);
 }
@@ -120,6 +130,7 @@ function cambiarChat(id) {
 
     // Si Kumi estaba "escribiendo" una respuesta, se corta: el contenido se vuelve a dibujar completo
     if (escrituraActiva) { escrituraActiva.cancelar(); escrituraActiva = null; }
+    detenerVoz();   // si Kumi estaba leyendo un mensaje del chat anterior, se calla
 
     const container = document.getElementById('session-container');
     container.innerHTML = '';
@@ -129,10 +140,7 @@ function cambiarChat(id) {
     });
 
     // Actualizar título dinámico en el Header superior
-    const titleEl = document.getElementById('current-chat-title');
-    if (titleEl) {
-        titleEl.textContent = chatObj.titulo;
-    }
+    ponerTituloHeader(chatObj.titulo, false);
 
     const mainApp = document.getElementById('main-app');
     if (chatObj.historial.length > 0) {
@@ -200,10 +208,8 @@ function guardarNuevoTitulo(id, nuevoTexto) {
     const chatObj = listaChats.find(c => c.id === id);
     if (chatObj && nuevoTexto.trim() !== '') {
         chatObj.titulo = nuevoTexto.trim();
-        if (chatActualId === id) {
-            const titleEl = document.getElementById('current-chat-title');
-            if (titleEl) titleEl.textContent = chatObj.titulo;
-        }
+        chatObj.tituloManual = true;     // desde ahora el título es del usuario: la IA no lo vuelve a tocar
+        if (chatActualId === id) ponerTituloHeader(chatObj.titulo);
     }
     editingChatId = null;
     renderizarListaChats();
@@ -257,6 +263,7 @@ function renderizarListaChats() {
             const titulo = document.createElement('span');
             titulo.className = 'chat-item-title';
             titulo.textContent = chat.titulo;
+            titulo.title = chat.titulo;
             main.append(icono, titulo);
 
             // Botón de configuración con la ruedita (⚙️)
@@ -414,31 +421,7 @@ function detenerReconocimiento() {
     if (input) input.placeholder = placeholderBase();
 }
 
-/* ---------- Síntesis de Voz (Bocina en mensajes de Kumi) ---------- */
-function leerTexto(texto, botonElement) {
-    if (!('speechSynthesis' in window)) {
-        alert('Lo siento, tu navegador no soporta la síntesis de voz.');
-        return;
-    }
-
-    // Cancelar cualquier audio anterior que se esté reproduciendo
-    window.speechSynthesis.cancel();
-
-    // Limpiar etiquetas HTML y asteriscos para que la voz lea de forma natural
-    const textoLimpio = texto.replace(/\*\*/g, '').replace(/<[^>]*>/g, '');
-
-    const utterance = new SpeechSynthesisUtterance(textoLimpio);
-    utterance.lang = 'es-ES'; // Configurado en español
-    utterance.rate = 1.0;     // Velocidad normal
-
-    if (botonElement) {
-        botonElement.classList.add('speaking');
-        utterance.onend = () => botonElement.classList.remove('speaking');
-        utterance.onerror = () => botonElement.classList.remove('speaking');
-    }
-
-    window.speechSynthesis.speak(utterance);
-}
+/* (La síntesis de voz está en la sección "Voz de Kumi", más abajo) */
 
 /* ---------- Mensajes en pantalla ---------- */
 // opciones.animar: pequeña animación de entrada (solo para mensajes nuevos)
@@ -469,6 +452,7 @@ function agregarBloqueUI(autor, texto, scroll = true, opciones = {}) {
         btnSpeech.className = 'btn-speech';
         btnSpeech.title = 'Escuchar mensaje';
         btnSpeech.setAttribute('aria-label', 'Escuchar mensaje de Kumi');
+        btnSpeech.setAttribute('aria-pressed', 'false');
         btnSpeech.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
         btnSpeech.onclick = () => leerTexto(texto, btnSpeech);
         block.appendChild(btnSpeech);
@@ -560,12 +544,11 @@ async function enviarEntrada(event) {
     mainApp.classList.remove('state-welcome');
     mainApp.classList.add('state-chat');
 
-    if (chatObj.titulo === 'Nueva conversación') {
-        chatObj.titulo = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
-        const titleEl = document.getElementById('current-chat-title');
-        if (titleEl && chatActualId === chatObj.id) {
-            titleEl.textContent = chatObj.titulo;
-        }
+    // Primer mensaje del chat: título provisional al instante y, en paralelo, un resumen hecho por la IA
+    if (chatObj.historial.length === 0 && !chatObj.tituloManual) {
+        chatObj.titulo = resumirLocal(texto);
+        if (chatActualId === chatObj.id) ponerTituloHeader(chatObj.titulo, false);
+        solicitarTituloIA(chatObj, texto);
     }
 
     agregarBloqueUI('user', texto);
@@ -608,8 +591,8 @@ async function enviarEntrada(event) {
 /* ---------- Velocidad de escritura (ajústala aquí) ----------
    Milisegundos por letra: MENOS = más rápido, MÁS = más lento.
    Las respuestas largas se aceleran solas para no pasar de "maxTotal" milisegundos en total. */
-const ESCRITURA_RESPUESTA = { minMs: 9, maxMs: 24, maxTotal: 7000 };
-const ESCRITURA_GLOBO_MS = 34;
+const ESCRITURA_RESPUESTA = { minMs: 4, maxMs: 12, maxTotal: 2500 };
+const ESCRITURA_GLOBO_MS = 20;
 
 /* ---------- Sonido "pop" (generado con Web Audio: no necesita archivos) ---------- */
 let audioCtx = null;
@@ -692,9 +675,9 @@ function iniciarEscritura(contenedor, texto, opciones = {}) {
     for (const it of items) {
         tiempos.push(acumulado);
         let peso = 1;
-        if ('.!?…'.includes(it.ch)) peso += 6;
-        else if (',;:'.includes(it.ch)) peso += 2;
-        else if (it.ch === '\n') peso += 4;
+        if ('.!?…'.includes(it.ch)) peso += 3;
+        else if (',;:'.includes(it.ch)) peso += 1;
+        else if (it.ch === '\n') peso += 2;
         acumulado += peso;
     }
     // ms por letra: rápido pero legible, y las respuestas largas nunca pasan de ~6 s en total
@@ -892,3 +875,357 @@ function actualizarDesplazamientoBienvenida(sinAnimacion = false) {
         main.classList.remove('no-composer-anim');       // ...y la devuelve en el acto (si no, rompería la bajada al enviar)
     }
 }
+
+
+/* ================================================================
+   Títulos automáticos de las conversaciones
+   ================================================================ */
+let timerTituloHeader = null;
+
+// Muestra el nombre de la conversación arriba, con un pequeño fundido al cambiar
+function ponerTituloHeader(texto, animar = true) {
+    const el = byId('current-chat-title');
+    if (!el) return;
+    el.title = texto;
+    clearTimeout(timerTituloHeader);
+    if (!animar || el.textContent === texto || reducirMovimiento()) {
+        el.classList.remove('is-changing');
+        el.textContent = texto;
+        return;
+    }
+    el.classList.add('is-changing');
+    timerTituloHeader = setTimeout(() => {
+        el.textContent = texto;
+        el.classList.remove('is-changing');
+    }, 140);
+}
+
+// Título provisional (sin IA): la primera frase, sin saludos, de hasta ~50 caracteres
+function resumirLocal(texto) {
+    let t = texto.replace(/\s+/g, ' ').trim().split(/[.!?…]/)[0].trim() || texto.trim();
+    t = t.replace(/^(hola|holi|hey|ey|oye|buenas( tardes| noches| d[ií]as)?|buen(os|as) d[ií]as)\b[\s,!.¡:]*/i, '');
+    t = t.replace(/^kumi\b[\s,!.:]*/i, '');
+    t = t.replace(/^[¡¿\s]+|[\s,;:]+$/g, '');
+    if (!t) t = texto.trim();
+    if (t.length > 50) {
+        const corte = t.slice(0, 50);
+        const espacio = corte.lastIndexOf(' ');
+        t = (espacio > 20 ? corte.slice(0, espacio) : corte).trim() + '…';
+    }
+    return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+// Pide a la IA un resumen corto del primer mensaje. Si falla, se queda el título provisional.
+async function solicitarTituloIA(chatObj, texto) {
+    try {
+        const r = await fetch('/api/titulo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: texto })
+        });
+        if (!r.ok) return;
+        const data = await r.json();
+        const nuevo = typeof data.titulo === 'string' ? data.titulo.trim() : '';
+        if (!nuevo) return;
+        if (chatObj.tituloManual) return;               // el usuario ya lo renombró: se respeta
+        if (!listaChats.includes(chatObj)) return;      // el chat se borró mientras tanto
+        chatObj.titulo = nuevo;
+        if (chatActualId === chatObj.id) ponerTituloHeader(nuevo);
+        if (editingChatId === null) renderizarListaChats();   // si se está editando otro nombre, no se interrumpe
+    } catch { /* sin conexión o error: queda el título provisional */ }
+}
+
+/* ================================================================
+   Voz de Kumi
+   ================================================================ */
+// Los navegadores solo pueden usar las voces que trae cada dispositivo (cambian entre Windows, Android, iPhone...).
+// Por eso Kumi define 6 "perfiles" y cada dispositivo asigna a cada perfil la mejor voz en español que tenga
+// del género correspondiente, ajustando tono y velocidad. El perfil predeterminado es siempre el mismo.
+const PERFILES_VOZ = [
+    { id: 'f-alegre',  nombre: 'Aurora', genero: 'f', desc: 'Alegre y cercana',      pitch: 1.12, rate: 1.06 },
+    { id: 'f-calida',  nombre: 'Luna',   genero: 'f', desc: 'Cálida y tranquila',    pitch: 1.0,  rate: 0.97 },
+    { id: 'f-suave',   nombre: 'Alba',   genero: 'f', desc: 'Suave y serena',        pitch: 1.04, rate: 0.9 },
+    { id: 'm-amable',  nombre: 'Leo',    genero: 'm', desc: 'Amable y cercano',      pitch: 1.0,  rate: 1.02 },
+    { id: 'm-calmado', nombre: 'Mateo',  genero: 'm', desc: 'Calmado y claro',       pitch: 0.9,  rate: 0.96 },
+    { id: 'm-grave',   nombre: 'Gael',   genero: 'm', desc: 'Grave y sereno',        pitch: 0.8,  rate: 0.93 }
+];
+const VOZ_PREDETERMINADA = 'f-alegre';
+const MUESTRA_VOZ = 'Hola, soy Kumi. Estoy aquí para escucharte, sin prisa y sin juicios.';
+
+const NOMBRES_FEMENINOS = ['helena', 'laura', 'sabina', 'elvira', 'dalia', 'salome', 'paola', 'camila', 'elena', 'marina', 'lia', 'ximena',
+    'valentina', 'abril', 'maria', 'mariana', 'monica', 'paulina', 'marisol', 'soledad', 'angelica', 'francisca', 'isabela', 'isabella',
+    'catalina', 'carolina', 'lucia', 'luciana', 'sofia', 'esperanza', 'female', 'mujer', 'femenina'];
+const NOMBRES_MASCULINOS = ['pablo', 'raul', 'alvaro', 'jorge', 'gonzalo', 'alonso', 'tomas', 'saul', 'lorenzo', 'mateo', 'emilio', 'diego',
+    'juan', 'carlos', 'pedro', 'miguel', 'andres', 'enrique', 'roberto', 'antonio', 'male', 'hombre', 'masculina'];
+const VOCES_EXCLUIDAS = ['eddy', 'flo', 'grandma', 'grandpa', 'reed', 'rocko', 'sandy', 'shelley'];   // voces "de broma" de Apple
+const PREFERENCIA_REGION = { 'es-co': 8, 'es-mx': 7, 'es-us': 6, 'es-419': 6, 'es-ar': 4, 'es-cl': 4, 'es-pe': 4, 'es-ve': 4, 'es-es': 2 };
+
+let vocesSistema = [];
+let perfilVozId = leerLocal('kumi_voz', VOZ_PREDETERMINADA);
+if (!PERFILES_VOZ.some(p => p.id === perfilVozId)) perfilVozId = VOZ_PREDETERMINADA;
+
+const sinAcentos = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const contienePalabra = (texto, lista) => lista.some(w => new RegExp('\\b' + w + '\\b').test(texto));
+
+function generoDeVoz(v) {
+    const n = sinAcentos(v.name);
+    if (contienePalabra(n, NOMBRES_FEMENINOS)) return 'f';
+    if (contienePalabra(n, NOMBRES_MASCULINOS)) return 'm';
+    if (n.startsWith('google')) return 'f';      // las voces "Google español" son femeninas
+    return null;
+}
+
+function puntuarVoz(v) {
+    const n = sinAcentos(v.name);
+    let p = 0;
+    if (/natural|neural|online|premium|enhanced|siri|chirp|studio/.test(n)) p += 50;   // suenan menos robóticas
+    if (n.startsWith('google')) p += 20;
+    if (!v.localService) p += 10;
+    if (/compact/.test(n)) p -= 15;
+    p += PREFERENCIA_REGION[(v.lang || '').replace('_', '-').toLowerCase()] || 0;
+    return p;
+}
+
+function cargarVoces() {
+    if (!('speechSynthesis' in window)) return;
+    const todas = window.speechSynthesis.getVoices() || [];
+    vocesSistema = todas
+        .filter(v => /^es([-_]|$)/i.test(v.lang) && !VOCES_EXCLUIDAS.some(x => sinAcentos(v.name).includes(x)))
+        .sort((a, b) => puntuarVoz(b) - puntuarVoz(a));
+}
+
+// Voz del dispositivo que le toca a un perfil. 'exacta' = hay una voz de ese género en el dispositivo.
+function vozParaPerfil(perfil) {
+    const delGenero = vocesSistema.filter(v => generoDeVoz(v) === perfil.genero);
+    if (delGenero.length) {
+        const posicion = PERFILES_VOZ.filter(p => p.genero === perfil.genero).findIndex(p => p.id === perfil.id);
+        return { voz: delGenero[posicion % delGenero.length], exacta: true };
+    }
+    const sinGenero = vocesSistema.filter(v => generoDeVoz(v) === null);
+    return { voz: sinGenero[0] || vocesSistema[0] || null, exacta: false };
+}
+
+/* ---------- Reproducción (con pulsación alterna: leer / detener) ---------- */
+let sesionVoz = 0;            // cada lectura nueva o cada "detener" cambia este número y anula los avisos tardíos de la anterior
+let botonVozActivo = null;
+
+function detenerVoz() {
+    sesionVoz++;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (botonVozActivo) {
+        botonVozActivo.classList.remove('speaking');
+        botonVozActivo.setAttribute('aria-pressed', 'false');
+    }
+    botonVozActivo = null;
+}
+
+// Parte el texto en trozos cortos: Chrome corta las lecturas largas a los ~15 s y así no pasa
+function dividirEnTrozos(texto, max = 180) {
+    const limpio = texto.replace(/([.!?…:])\s*\n+\s*/g, '$1 ').replace(/\s*\n+\s*/g, '. ').replace(/\s+/g, ' ').trim();
+    const frases = limpio.match(/[^.!?…]+[.!?…]*\s*/g) || [limpio];
+    const trozos = [];
+    let actual = '';
+    const cerrar = () => { if (actual.trim()) trozos.push(actual.trim()); actual = ''; };
+    for (let f of frases) {
+        while (f.length > max) {                      // frase larguísima: se corta en un espacio
+            let i = f.lastIndexOf(' ', max);
+            if (i < 40) i = max;
+            cerrar();
+            trozos.push(f.slice(0, i).trim());
+            f = f.slice(i);
+        }
+        if ((actual + f).length > max) cerrar();
+        actual += f;
+    }
+    cerrar();
+    return trozos;
+}
+
+function hablar(texto, boton, perfilId = perfilVozId) {
+    if (!('speechSynthesis' in window)) {
+        alert('Lo siento, tu navegador no soporta la síntesis de voz.');
+        return;
+    }
+    // Segunda pulsación sobre el mismo botón = detener (antes reiniciaba la lectura y el botón quedaba gris)
+    if (botonVozActivo === boton) { detenerVoz(); return; }
+    detenerVoz();
+
+    if (vocesSistema.length === 0) cargarVoces();
+    const perfil = PERFILES_VOZ.find(p => p.id === perfilId) || PERFILES_VOZ[0];
+    const { voz, exacta } = vozParaPerfil(perfil);
+    let tono = perfil.pitch;
+    if (!exacta) tono = perfil.genero === 'm' ? tono * 0.8 : tono * 1.2;    // sin voz de ese género: se imita con el tono
+    tono = Math.min(1.8, Math.max(0.5, tono));
+
+    const trozos = dividirEnTrozos(texto.replace(/\*\*/g, '').replace(/<[^>]*>/g, ''));
+    if (trozos.length === 0) return;
+
+    const miSesion = ++sesionVoz;
+    botonVozActivo = boton;
+    boton.classList.add('speaking');
+    boton.setAttribute('aria-pressed', 'true');
+
+    const terminar = () => {
+        if (miSesion !== sesionVoz) return;           // aviso tardío de una lectura que ya se detuvo: se ignora
+        boton.classList.remove('speaking');
+        boton.setAttribute('aria-pressed', 'false');
+        if (botonVozActivo === boton) botonVozActivo = null;
+    };
+    let i = 0;
+    const siguiente = () => {
+        if (miSesion !== sesionVoz) return;
+        if (i >= trozos.length) { terminar(); return; }
+        const u = new SpeechSynthesisUtterance(trozos[i++]);
+        u.lang = voz ? voz.lang : 'es-ES';
+        if (voz) u.voice = voz;
+        u.pitch = tono;
+        u.rate = perfil.rate;
+        u.onend = siguiente;
+        u.onerror = terminar;
+        window.speechSynthesis.speak(u);
+    };
+    setTimeout(siguiente, 60);    // pausa mínima tras cancelar(): algunos navegadores "se tragan" el primer enunciado si no
+}
+
+function leerTexto(texto, botonElement) { hablar(texto, botonElement); }
+
+if ('speechSynthesis' in window) {
+    // Muchos navegadores cargan la lista de voces con retraso
+    window.speechSynthesis.onvoiceschanged = () => {
+        cargarVoces();
+        if (ajustesAbiertos) renderizarVoces();
+    };
+}
+
+/* ================================================================
+   Ventana de ajustes
+   ================================================================ */
+let ajustesAbiertos = false;
+let focoAntesDeAjustes = null;
+
+function renderizarVoces() {
+    const lista = byId('voice-list');
+    lista.innerHTML = '';
+    const hayInexactas = [];
+
+    const grupos = [['f', 'Voces femeninas'], ['m', 'Voces masculinas']];
+    grupos.forEach(([genero, titulo]) => {
+        const tit = document.createElement('div');
+        tit.className = 'voice-group-title';
+        tit.textContent = titulo;
+        lista.appendChild(tit);
+
+        const grupo = document.createElement('div');
+        grupo.setAttribute('role', 'radiogroup');
+        grupo.setAttribute('aria-label', titulo);
+
+        PERFILES_VOZ.filter(p => p.genero === genero).forEach(perfil => {
+            const { voz, exacta } = vozParaPerfil(perfil);
+            if (!exacta) hayInexactas.push(genero);
+
+            const card = document.createElement('div');
+            card.className = 'voice-card';
+            card.dataset.perfil = perfil.id;
+            card.tabIndex = 0;
+            card.setAttribute('role', 'radio');
+            card.setAttribute('aria-checked', String(perfil.id === perfilVozId));
+
+            const avatar = document.createElement('div');
+            avatar.className = 'voice-avatar';
+            avatar.textContent = perfil.nombre.charAt(0);
+
+            const info = document.createElement('div');
+            info.className = 'voice-info';
+            const nombre = document.createElement('div');
+            nombre.className = 'voice-name';
+            nombre.textContent = perfil.nombre;
+            if (perfil.id === VOZ_PREDETERMINADA) {
+                const badge = document.createElement('span');
+                badge.className = 'voice-badge';
+                badge.textContent = 'Predeterminada';
+                nombre.appendChild(badge);
+            }
+            const desc = document.createElement('div');
+            desc.className = 'voice-desc';
+            desc.textContent = perfil.desc;
+            const dispositivo = document.createElement('div');
+            dispositivo.className = 'voice-device';
+            dispositivo.textContent = voz ? 'Voz del dispositivo: ' + voz.name : 'Voz predeterminada del dispositivo';
+            info.append(nombre, desc, dispositivo);
+
+            const play = document.createElement('button');
+            play.type = 'button';
+            play.className = 'voice-play';
+            play.setAttribute('aria-label', 'Escuchar una muestra de la voz ' + perfil.nombre);
+            play.setAttribute('aria-pressed', 'false');
+            play.innerHTML = '<i class="fa-solid fa-play"></i>';
+            play.addEventListener('click', e => { e.stopPropagation(); hablar(MUESTRA_VOZ, play, perfil.id); });
+
+            const check = document.createElement('span');
+            check.className = 'voice-check';
+            check.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+            card.append(avatar, info, play, check);
+            card.addEventListener('click', () => seleccionarPerfilVoz(perfil.id));
+            card.addEventListener('keydown', e => {
+                if (e.target === card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); seleccionarPerfilVoz(perfil.id); }
+            });
+            grupo.appendChild(card);
+        });
+        lista.appendChild(grupo);
+    });
+
+    // Nota honesta sobre lo que el dispositivo puede o no hacer
+    const nota = byId('voice-note');
+    let texto = 'Las voces dependen de tu dispositivo y navegador: Kumi usa la mejor voz en español que encuentre en cada uno.';
+    if (vocesSistema.length === 0) {
+        texto = 'Este dispositivo no muestra voces en español instaladas, así que se usará la voz que traiga por defecto. ' + texto;
+    } else if (hayInexactas.length) {
+        const cual = hayInexactas.includes('m') && hayInexactas.includes('f') ? 'femeninas ni masculinas'
+            : hayInexactas.includes('m') ? 'masculinas' : 'femeninas';
+        texto = 'Este dispositivo no tiene voces ' + cual + ' en español: esos perfiles usan la voz disponible con el tono ajustado. ' + texto;
+    }
+    nota.textContent = texto;
+}
+
+function seleccionarPerfilVoz(id) {
+    perfilVozId = id;
+    guardarLocal('kumi_voz', id);
+    document.querySelectorAll('.voice-card').forEach(c => c.setAttribute('aria-checked', String(c.dataset.perfil === id)));
+}
+
+function abrirAjustes() {
+    cargarVoces();
+    renderizarVoces();
+    focoAntesDeAjustes = document.activeElement;
+    if (window.innerWidth <= 768 && byId('sidebar').classList.contains('open')) toggleSidebar();
+    byId('settings-overlay').classList.add('open');
+    byId('settings-modal').classList.add('open');
+    ajustesAbiertos = true;
+    byId('settings-close').focus();
+}
+
+function cerrarAjustes() {
+    if (!ajustesAbiertos) return;
+    ajustesAbiertos = false;
+    byId('settings-overlay').classList.remove('open');
+    byId('settings-modal').classList.remove('open');
+    // Si estaba sonando una muestra, se corta (si era un mensaje del chat, se deja)
+    if (botonVozActivo && botonVozActivo.classList.contains('voice-play')) detenerVoz();
+    if (focoAntesDeAjustes && focoAntesDeAjustes.focus) focoAntesDeAjustes.focus();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    cargarVoces();
+    document.addEventListener('keydown', e => {
+        if (!ajustesAbiertos) return;
+        if (e.key === 'Escape') { e.preventDefault(); cerrarAjustes(); return; }
+        if (e.key === 'Tab') {      // el foco se queda dentro de la ventana mientras está abierta
+            const f = [...byId('settings-modal').querySelectorAll('button, [tabindex="0"]')].filter(x => x.offsetParent !== null);
+            if (!f.length) return;
+            const primero = f[0], ultimo = f[f.length - 1];
+            if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+            else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+        }
+    });
+});

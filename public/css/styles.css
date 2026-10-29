@@ -256,17 +256,18 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.2s, background-color 0.2s, transform 0.2s;
+            transition: opacity 0.2s, color 0.2s;
         }
+        /* Solo gira el ícono: el botón (y cualquier fondo) se queda quieto */
+        .btn-chat-config i { display: block; transition: transform 0.2s; }
+        .btn-chat-config:focus { outline: none; }
+        .btn-chat-config:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
         .chat-history-item:hover .btn-chat-config,
         .btn-chat-config.active {
             opacity: 1;
         }
-        .btn-chat-config:hover {
-            color: var(--text-primary);
-            background-color: rgba(0, 0, 0, 0.08);
-            transform: rotate(30deg);
-        }
+        .btn-chat-config:hover { color: var(--text-primary); }
+        .btn-chat-config:hover i { transform: rotate(30deg); }
 
         /* Menú Contextual Desplegable */
         .chat-context-menu {
@@ -365,7 +366,7 @@
             pointer-events: none;
         }
         .app-header > * { pointer-events: auto; }
-        .header-left { display: flex; align-items: center; min-width: 0; flex: 1; pointer-events: none; }
+        .header-left { display: flex; align-items: center; min-width: 0; flex: 0 1 50%; max-width: 50%; pointer-events: none; }
         .header-left > button { pointer-events: auto; }
 
         .header-title {
@@ -564,6 +565,7 @@
             .btn-expand-desktop, .btn-collapse-sidebar { display: none !important; }
             .app-header { padding: 12px 14px; }
             .header-title { font-size: 13px; }
+            .header-left { flex-basis: 62%; max-width: 62%; }   /* en el móvil sobra espacio a la derecha */
             #session-container { padding: 14px; }
             .session-block { width: 92%; }
         }
@@ -585,7 +587,7 @@
 /* ---------- Cambio de tema uniforme ----------
    Mientras dura el cambio (clase puesta por JS en <html>) TODOS los elementos usan la misma duración y curva,
    así que sidebar, fondo, tarjetas y botones se transforman exactamente al mismo tiempo. */
-html.theme-switching *,
+html.theme-switching *:not(.tw-ch),
 html.theme-switching *::before,
 html.theme-switching *::after {
     transition:
@@ -601,7 +603,7 @@ html.theme-switching *::after {
 /* Los colores de los degradados (--btn-from / --btn-to) se animan SOLO en <body>, que es donde cambian.
    Los demás elementos los heredan ya animados. Si todos tuvieran su propia transición, cada uno
    reiniciaría la suya en cada fotograma y los botones quedarían rezagados. */
-html.theme-switching body {
+html.theme-switching body[data-theme] {
     transition:
         background-color var(--theme-time) var(--theme-ease),
         color var(--theme-time) var(--theme-ease),
@@ -776,4 +778,140 @@ main.state-chat .quick-prompts * { pointer-events: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+
+/* ================================================================
+   Ajustes v2.5.1
+   ================================================================ */
+
+/* Cambio de tema con View Transitions: el navegador fotografía la pantalla antes y después y las
+   mezcla en la tarjeta gráfica. Es uniforme por construcción y no se traba aunque haya muchos mensajes. */
+/* La imagen vieja se queda quieta y la nueva aparece encima (mezcla simple): se ve igual que un fundido,
+   pero la tarjeta gráfica trabaja menos que con la mezcla aditiva por defecto. */
+::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: vtAparecer 0.45s ease both; mix-blend-mode: normal; }
+@keyframes vtAparecer { from { opacity: 0; } to { opacity: 1; } }
+
+/* El logo de la bienvenida no debe seguir "flotando" (repintando la pantalla) cuando ya no se ve */
+main.state-chat .logo-float { animation: none; }
+
+.header-title.is-changing { opacity: 0; transform: translateY(3px); }
+
+/* ---------- Botón Ajustes (menú lateral) ---------- */
+.btn-settings {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 13.5px; font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.btn-settings i { color: var(--text-muted); width: 16px; text-align: center; transition: transform 0.35s ease; }
+.btn-settings:hover { background-color: var(--chat-item-hover); }
+.btn-settings:hover i { transform: rotate(40deg); }
+.btn-settings:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+
+/* ---------- Ventana de ajustes ---------- */
+.settings-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(15, 23, 42, 0.45);
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s;
+}
+.settings-overlay.open { opacity: 1; visibility: visible; }
+
+.settings-modal {
+    position: fixed; z-index: 410;
+    top: 50%; left: 50%;
+    width: min(700px, calc(100vw - 24px));
+    max-height: min(620px, calc(100dvh - 24px));
+    display: flex; flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    opacity: 0; visibility: hidden;
+    transform: translate(-50%, -48%) scale(0.96);
+    transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.25, 1), visibility 0.3s;
+}
+.settings-modal.open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+
+.settings-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); }
+.settings-header h2 { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.settings-close {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; border-radius: 10px;
+    color: var(--text-muted); font-size: 16px; cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.settings-close:hover { background-color: var(--chat-item-hover); color: var(--text-primary); }
+
+.settings-body { display: flex; min-height: 0; flex: 1; }
+.settings-tabs { display: flex; flex-direction: column; gap: 4px; padding: 14px; width: 170px; flex-shrink: 0; border-right: 1px solid var(--border-subtle); }
+.settings-tab {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: transparent; border: none; border-radius: 10px;
+    color: var(--text-secondary); font-size: 13.5px; font-weight: 600; text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.settings-tab i { width: 16px; text-align: center; color: var(--text-muted); }
+.settings-tab:hover { background-color: var(--chat-item-hover); }
+.settings-tab[aria-selected="true"] { background-color: var(--chat-item-active); color: var(--text-primary); }
+
+.settings-panel { flex: 1; min-width: 0; padding: 20px 24px 24px; overflow-y: auto; }
+.settings-panel h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.settings-hint { font-size: 13px; color: var(--text-muted); line-height: 1.45; margin-bottom: 6px; }
+.settings-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 16px; padding: 10px 12px; border: 1px dashed var(--border-subtle); border-radius: 10px; }
+
+.voice-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 18px 0 8px; }
+.voice-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; margin-bottom: 8px;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.voice-card:hover { border-color: var(--focus-border); }
+.voice-card:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+.voice-card[aria-checked="true"] { border-color: var(--focus-border); box-shadow: 0 0 0 2px var(--focus-border); }
+.voice-avatar {
+    width: 38px; height: 38px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--btn-bg); color: #fff;
+    border-radius: 12px; font-weight: 700; font-size: 15px;
+}
+.voice-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.voice-name { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.voice-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--kumi-accent); border: 1px solid var(--kumi-accent); border-radius: 6px; padding: 1px 6px; }
+.voice-desc { font-size: 12.5px; color: var(--text-secondary); }
+.voice-device { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voice-play {
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 50%;
+    color: var(--text-primary); font-size: 12px; cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.voice-play:hover { background-color: var(--chat-item-hover); }
+.voice-play.speaking { color: var(--kumi-accent); border-color: var(--kumi-accent); animation: pulse 1.5s infinite; }
+.voice-check { width: 20px; flex-shrink: 0; text-align: center; color: var(--kumi-accent); opacity: 0; transition: opacity 0.2s; }
+.voice-card[aria-checked="true"] .voice-check { opacity: 1; }
+
+@media (max-width: 600px) {
+    .settings-body { flex-direction: column; }
+    .settings-tabs { flex-direction: row; width: auto; border-right: none; border-bottom: 1px solid var(--border-subtle); padding: 10px 14px; overflow-x: auto; }
+    .settings-panel { padding: 16px 16px 20px; }
+    .voice-device { display: none; }
 }

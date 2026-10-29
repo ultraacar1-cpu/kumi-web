@@ -38,6 +38,10 @@
         </div>
 
         <div class="sidebar-bottom">
+            <button type="button" class="btn-settings" onclick="abrirAjustes()">
+                <i class="fa-solid fa-sliders"></i> Ajustes
+            </button>
+
             <div class="helpline-box">
                 <h4>Líneas de Crisis</h4>
                 <div class="helpline-item"><span>Salud mental (24 h):</span> <a href="tel:106">106</a></div>
@@ -106,6 +110,30 @@
             </p>
         </footer>
     </main>
+
+    <!-- Ventana de ajustes -->
+    <div id="settings-overlay" class="settings-overlay" onclick="cerrarAjustes()"></div>
+    <div id="settings-modal" class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="settings-header">
+            <h2 id="settings-title">Ajustes</h2>
+            <button type="button" id="settings-close" class="settings-close" onclick="cerrarAjustes()" aria-label="Cerrar ajustes">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="settings-body">
+            <nav class="settings-tabs" role="tablist" aria-label="Secciones de ajustes">
+                <button type="button" role="tab" id="tab-voz" class="settings-tab" aria-selected="true" aria-controls="panel-voz">
+                    <i class="fa-solid fa-volume-high"></i> Voz
+                </button>
+            </nav>
+            <section id="panel-voz" class="settings-panel" role="tabpanel" aria-labelledby="tab-voz">
+                <h3>Voz de Kumi</h3>
+                <p class="settings-hint">Elige cómo suena Kumi cuando tocas la bocina de un mensaje. Pulsa ▶ para escuchar una muestra.</p>
+                <div id="voice-list"></div>
+                <p id="voice-note" class="settings-note"></p>
+            </section>
+        </div>
+    </div>
 
     <script src="/js/app.js" defer></script>
 </body>

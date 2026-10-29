@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const path = require('path');
 const chatRouter = require('./routes/chat');
+const tituloRouter = require('./routes/titulo');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
@@ -34,6 +35,7 @@ function crearApp() {
     app.use(express.static(PUBLIC_DIR));
 
     app.use('/api', chatRouter);
+    app.use('/api', tituloRouter);
     app.use('/api', (req, res) => res.status(404).json({ error: 'No encontrado' }));
 
     // Página principal para cualquier otra ruta; los archivos que no existen devuelven 404 real.

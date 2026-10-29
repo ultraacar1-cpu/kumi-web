@@ -13,5 +13,9 @@ module.exports = {
     MAX_CHARS_MENSAJE: 2000,
     // Rate limit por IP
     RATE_WINDOW_MS: 60 * 1000,
-    RATE_MAX: 20
+    RATE_MAX: 20,
+    // Títulos automáticos de las conversaciones
+    TITULO_MAX_TOKENS: 800,      // alto a propósito: el modelo "piensa" antes de responder y eso también cuenta
+    TITULO_TIMEOUT_MS: 12000,
+    TITULO_RATE_MAX: 10          // por minuto y por IP
 };

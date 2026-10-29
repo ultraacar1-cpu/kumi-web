@@ -1,11 +1,12 @@
 const { GROQ_API_KEY, GROQ_MODEL, GROQ_URL, TIMEOUT_MS, MAX_TOKENS, TEMPERATURE } = require('../config');
 
 // Único lugar que habla con el proveedor de IA. Si algún día cambias de proveedor, solo tocas este archivo.
-async function generarRespuesta(messages) {
+// opciones (todas opcionales): { maxTokens, temperature, timeoutMs }
+async function generarRespuesta(messages, opciones = {}) {
     if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY no configurada');
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), opciones.timeoutMs || TIMEOUT_MS);
 
     try {
         const response = await fetch(GROQ_URL, {
@@ -18,8 +19,8 @@ async function generarRespuesta(messages) {
             body: JSON.stringify({
                 model: GROQ_MODEL,
                 messages,
-                temperature: TEMPERATURE,
-                max_completion_tokens: MAX_TOKENS
+                temperature: opciones.temperature !== undefined ? opciones.temperature : TEMPERATURE,
+                max_completion_tokens: opciones.maxTokens || MAX_TOKENS
             })
         });
 

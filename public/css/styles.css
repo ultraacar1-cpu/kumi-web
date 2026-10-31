@@ -1054,3 +1054,73 @@ main.state-chat .logo-float { animation: none; }
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
 }
 .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+
+/* ================================================================
+   Conversaciones guardadas en el dispositivo
+   ================================================================ */
+.settings-panel[hidden] { display: none; }
+
+/* Interruptor */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 18px 0 12px; padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-canvas); cursor: pointer; }
+.switch-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.switch-text strong { font-size: 14px; color: var(--text-primary); }
+.switch-text small { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+.switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.switch-track { position: absolute; inset: 0; border-radius: 13px; background: var(--border-subtle); transition: background-color 0.25s ease; }
+.switch-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.25, 1); }
+.switch input:checked + .switch-track { background: var(--kumi-accent); }
+.switch input:checked + .switch-track::after { transform: translateX(20px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--focus-border); outline-offset: 3px; }
+
+.save-confirm { margin-bottom: 12px; padding: 14px 16px; border: 1px solid rgba(220, 38, 38, 0.4); border-radius: 12px; background: rgba(220, 38, 38, 0.06); }
+.save-confirm[hidden] { display: none; }
+.save-confirm p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 12px; }
+.save-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+.btn-danger-outline {
+    margin-top: 16px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    background: transparent; color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.45); border-radius: 10px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+[data-theme="dark"] .btn-danger-outline { color: #f87171; border-color: rgba(248, 113, 113, 0.5); }
+.btn-danger-outline:hover { background: rgba(220, 38, 38, 0.1); }
+.btn-danger-outline.confirmando { background: #dc2626; color: #fff; border-color: #dc2626; }
+.btn-danger-outline:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+
+/* Botones de la tarjeta de "¿guardar?" y de las confirmaciones */
+.offer-btn {
+    padding: 9px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+    background: transparent; color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.offer-btn:hover { background: var(--chat-item-hover); }
+.offer-btn.primary { background: var(--btn-bg); color: #fff; border-color: transparent; }
+.offer-btn.primary:hover { filter: brightness(1.07); }
+.offer-btn.danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+.offer-btn.danger:hover { background: #b91c1c; }
+.offer-btn:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+
+/* Tarjeta dentro del chat que pregunta si se guarda la conversación */
+.save-offer {
+    align-self: center;
+    width: min(100%, 540px);
+    padding: 16px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    animation: bubbleInLeft 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+.save-offer.saliendo { opacity: 0; transform: translateY(6px); transition: opacity 0.3s ease, transform 0.3s ease; }
+.save-offer-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 14.5px; font-weight: 700; color: var(--text-primary); }
+.save-offer-title i { color: var(--kumi-accent); }
+.save-offer-text { margin-bottom: 14px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.save-offer-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }

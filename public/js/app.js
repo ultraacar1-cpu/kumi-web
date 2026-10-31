@@ -21,6 +21,9 @@ function leerLocal(clave, porDefecto) {
 function guardarLocal(clave, valor) {
     try { localStorage.setItem(clave, valor); } catch { /* sin almacenamiento: seguimos sin guardar */ }
 }
+function borrarLocal(clave) {
+    try { localStorage.removeItem(clave); } catch { /* sin almacenamiento */ }
+}
 
 /* ---------- Inicio ---------- */
 window.addEventListener('DOMContentLoaded', () => {
@@ -32,6 +35,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', ajustarPlaceholder);
 
     // La barra lateral arranca escondida (la clase "collapsed" ya viene puesta en el HTML)
+    restaurarChats();   // si la persona permitió guardar, vuelven sus conversaciones (la pantalla de inicio sigue siendo un chat nuevo)
     crearNuevoChat();   // el chat vacío inicia la pantalla de bienvenida
 
     // Mantener el conjunto de bienvenida centrado si cambia el tamaño de la pantalla
@@ -217,6 +221,7 @@ function guardarNuevoTitulo(id, nuevoTexto) {
 
 // Renderizado de la lista de chats con secciones de Favoritos y Recientes
 function renderizarListaChats() {
+    persistir();    // favoritos, nombres, borrados y mensajes nuevos pasan por aquí
     const historyList = document.getElementById('chat-history-list');
     historyList.innerHTML = '';
 
@@ -565,6 +570,8 @@ async function enviarEntrada(event) {
 
         if (response.ok && typeof data.reply === 'string' && data.reply.trim()) {
             chatObj.historial.push({ role: 'assistant', content: data.reply });
+            persistir();
+            ofrecerGuardado();
             // Si hay señales de riesgo, el mensaje (con las líneas de ayuda) se muestra completo al instante
             if (chatActualId === chatObj.id) agregarBloqueUI('kumi', data.reply, true, { escribir: !data.riesgo });
         } else {
@@ -937,6 +944,7 @@ async function solicitarTituloIA(chatObj, texto) {
         chatObj.titulo = nuevo;
         if (chatActualId === chatObj.id) ponerTituloHeader(nuevo);
         if (editingChatId === null) renderizarListaChats();   // si se está editando otro nombre, no se interrumpe
+        else persistir();
     } catch { /* sin conexión o error: queda el título provisional */ }
 }
 
@@ -1233,6 +1241,7 @@ function abrirAjustes() {
     renderizarVoces();
     focoAntesDeAjustes = document.activeElement;
     if (window.innerWidth <= 768 && byId('sidebar').classList.contains('open')) toggleSidebar();
+    seleccionarPestanaAjustes('voz');
     byId('settings-overlay').classList.add('open');
     byId('settings-modal').classList.add('open');
     ajustesAbiertos = true;
@@ -1255,7 +1264,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!ajustesAbiertos) return;
         if (e.key === 'Escape') { e.preventDefault(); cerrarAjustes(); return; }
         if (e.key === 'Tab') {      // el foco se queda dentro de la ventana mientras está abierta
-            const f = [...byId('settings-modal').querySelectorAll('button, [tabindex="0"]')].filter(x => x.offsetParent !== null);
+            const f = [...byId('settings-modal').querySelectorAll('button, input, [tabindex]')].filter(x => x.offsetParent !== null && x.tabIndex >= 0 && !x.disabled);
             if (!f.length) return;
             const primero = f[0], ultimo = f[f.length - 1];
             if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
@@ -1466,6 +1475,7 @@ async function procesarTurnoLlamada(texto) {
 
     if (respuesta) {
         chatObj.historial.push({ role: 'assistant', content: respuesta });
+        persistir();
         agregarBloqueUI('kumi', respuesta, true, { animar: false });
         hablarEnLlamada(respuesta);
     } else {
@@ -1508,6 +1518,7 @@ function terminarLlamada(motivo) {
         main.classList.add('state-chat');
         const cont = byId('session-container');
         cont.scrollTop = cont.scrollHeight;
+        ofrecerGuardado();
     }
     if (focoAntesDeLlamada && focoAntesDeLlamada.focus) focoAntesDeLlamada.focus();
 }
@@ -1547,4 +1558,295 @@ window.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && llamada) { e.preventDefault(); terminarLlamada(); }
     });
+});
+
+
+/* ================================================================
+   Conversaciones guardadas en este dispositivo
+   ================================================================
+   Se usa localStorage (no cookies: son de 4 KB y viajan al servidor en cada petición). Todo queda en el navegador
+   de la persona; Kumi no lo sube a ningún lado. Como son conversaciones muy íntimas, NADA se guarda hasta que la
+   persona lo autorice (tarjeta dentro del chat o interruptor en Ajustes › Privacidad). */
+const CLAVE_CHATS = 'kumi_chats_v1';
+const CLAVE_PERMISO = 'kumi_guardado';          // 'si' | 'no' | sin definir (todavía no se ha preguntado)
+const MAX_CHATS_GUARDADOS = 100;
+const MAX_CARACTERES_GUARDADOS = 2000000;       // localStorage admite ~5 MB por sitio: se deja holgura
+const MAX_CARACTERES_MENSAJE = 10000;
+
+let guardadoActivo = leerLocal(CLAVE_PERMISO, '') === 'si';
+let timerGuardado = null;
+let avisoCuotaMostrado = false;
+
+function contarGuardadas() {
+    return listaChats.filter(c => c.historial.length > 0).length;
+}
+
+// Programa el guardado (se espera un instante para agrupar varios cambios seguidos)
+function persistir() {
+    if (!guardadoActivo) return;
+    clearTimeout(timerGuardado);
+    timerGuardado = setTimeout(() => { timerGuardado = null; escribirChats(); }, 250);
+}
+
+// Guarda de inmediato lo pendiente (al cerrar o esconder la página)
+function vaciarGuardado() {
+    if (timerGuardado) {
+        clearTimeout(timerGuardado);
+        timerGuardado = null;
+        escribirChats();
+    }
+}
+
+function escribirChats() {
+    if (!guardadoActivo) return;
+
+    // Los chats vacíos no se guardan
+    let chats = listaChats
+        .filter(c => c.historial.length > 0)
+        .slice(0, MAX_CHATS_GUARDADOS)
+        .map(c => ({
+            id: c.id,
+            titulo: c.titulo,
+            favorito: !!c.favorito,
+            tituloManual: !!c.tituloManual,
+            historial: c.historial.map(m => ({ role: m.role, content: m.content }))
+        }));
+
+    let json = JSON.stringify({ version: 1, chats });
+    // Si no cabe, se descartan primero los chats más antiguos que no sean favoritos
+    let descartados = 0;
+    while (json.length > MAX_CARACTERES_GUARDADOS && chats.length > 1) {
+        let i = -1;
+        for (let k = chats.length - 1; k >= 0; k--) { if (!chats[k].favorito) { i = k; break; } }
+        if (i === -1) break;
+        chats.splice(i, 1);
+        descartados++;
+        json = JSON.stringify({ version: 1, chats });
+    }
+
+    try {
+        localStorage.setItem(CLAVE_CHATS, json);
+        if (descartados > 0 && !avisoCuotaMostrado) {
+            avisoCuotaMostrado = true;
+            mostrarAviso('El espacio para guardar se llenó: las conversaciones más antiguas (sin favorito) dejaron de guardarse.');
+        }
+    } catch {
+        if (!avisoCuotaMostrado) {
+            avisoCuotaMostrado = true;
+            mostrarAviso('No pude guardar tus conversaciones en este dispositivo (sin espacio o bloqueado por el navegador).');
+        }
+    }
+}
+
+// Lo guardado se trata como "dato no confiable": se valida todo antes de usarlo
+function restaurarChats() {
+    if (!guardadoActivo) return;
+    try {
+        const crudo = localStorage.getItem(CLAVE_CHATS);
+        if (!crudo) return;
+        const datos = JSON.parse(crudo);
+        if (!datos || datos.version !== 1 || !Array.isArray(datos.chats)) return;
+
+        const vistos = new Set();
+        datos.chats.slice(0, MAX_CHATS_GUARDADOS).forEach(c => {
+            if (!c || typeof c.id !== 'string' || !c.id || vistos.has(c.id)) return;
+            const historial = Array.isArray(c.historial)
+                ? c.historial
+                    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.length > 0)
+                    .map(m => ({ role: m.role, content: m.content.slice(0, MAX_CARACTERES_MENSAJE) }))
+                : [];
+            if (historial.length === 0) return;
+            vistos.add(c.id);
+            listaChats.push({
+                id: c.id.slice(0, 60),
+                titulo: typeof c.titulo === 'string' && c.titulo.trim() ? c.titulo.trim().slice(0, 120) : 'Conversación',
+                historial,
+                favorito: c.favorito === true,
+                tituloManual: c.tituloManual === true
+            });
+        });
+    } catch { /* datos dañados: se ignoran y se empieza limpio */ }
+}
+
+/* ---------- Pedir permiso ---------- */
+function ofrecerGuardado() {
+    if (guardadoActivo || leerLocal(CLAVE_PERMISO, '') !== '') return;
+    setTimeout(mostrarOfertaGuardado, 1500);        // después de que Kumi termine de "escribir"
+}
+
+function mostrarOfertaGuardado() {
+    if (llamada) return;                            // nunca se interrumpe una llamada
+    if (guardadoActivo || leerLocal(CLAVE_PERMISO, '') !== '' || byId('save-offer')) return;
+    if (escrituraActiva) { setTimeout(mostrarOfertaGuardado, 500); return; }
+    const chatObj = listaChats.find(c => c.id === chatActualId);
+    if (!chatObj || chatObj.historial.length === 0) return;
+
+    const tarjeta = document.createElement('div');
+    tarjeta.id = 'save-offer';
+    tarjeta.className = 'save-offer';
+    tarjeta.setAttribute('role', 'group');
+    tarjeta.setAttribute('aria-label', 'Guardar conversaciones');
+
+    const titulo = document.createElement('div');
+    titulo.className = 'save-offer-title';
+    const icono = document.createElement('i');
+    icono.className = 'fa-solid fa-lock';
+    const tt = document.createElement('span');
+    tt.textContent = '¿Guardar tus conversaciones en este dispositivo?';
+    titulo.append(icono, tt);
+
+    const texto = document.createElement('p');
+    texto.className = 'save-offer-text';
+    texto.textContent = 'Así podrás volver a ellas cuando quieras. Se guardan solo en este navegador, no en nuestros servidores. ' +
+        'Si compartes este dispositivo con otras personas, quizá prefieras no guardarlas. Puedes cambiarlo cuando quieras en Ajustes › Privacidad.';
+
+    const acciones = document.createElement('div');
+    acciones.className = 'save-offer-actions';
+    const no = document.createElement('button');
+    no.type = 'button'; no.className = 'offer-btn'; no.textContent = 'Ahora no';
+    no.addEventListener('click', () => decidirGuardado(false));
+    const si = document.createElement('button');
+    si.type = 'button'; si.className = 'offer-btn primary'; si.textContent = 'Guardar';
+    si.addEventListener('click', () => decidirGuardado(true));
+    acciones.append(no, si);
+
+    tarjeta.append(titulo, texto, acciones);
+    const cont = byId('session-container');
+    cont.appendChild(tarjeta);
+    cont.scrollTop = cont.scrollHeight;
+}
+
+function quitarOfertaGuardado() {
+    const t = byId('save-offer');
+    if (!t) return;
+    t.classList.add('saliendo');
+    setTimeout(() => t.remove(), 320);
+}
+
+function decidirGuardado(guardar) {
+    quitarOfertaGuardado();
+    if (guardar) activarGuardado();
+    else {
+        guardarLocal(CLAVE_PERMISO, 'no');
+        mostrarAviso('De acuerdo: no se guardará nada. Puedes cambiarlo en Ajustes › Privacidad.');
+    }
+}
+
+function activarGuardado() {
+    guardarLocal(CLAVE_PERMISO, 'si');
+    guardadoActivo = true;
+    avisoCuotaMostrado = false;
+    quitarOfertaGuardado();
+    escribirChats();                                // lo que ya hay en pantalla se guarda ahora mismo
+    actualizarPanelPrivacidad();
+    mostrarAviso('Listo: tus conversaciones se guardarán en este dispositivo.');
+}
+
+function desactivarGuardado() {
+    guardarLocal(CLAVE_PERMISO, 'no');
+    guardadoActivo = false;
+    clearTimeout(timerGuardado);
+    timerGuardado = null;
+    borrarLocal(CLAVE_CHATS);
+    actualizarPanelPrivacidad();
+    mostrarAviso('Dejé de guardar y borré lo que había guardado en este dispositivo.');
+}
+
+function cancelarDesactivarGuardado() {
+    byId('save-confirm').hidden = true;
+    byId('save-toggle').checked = true;
+}
+
+/* ---------- Borrar todo (con doble pulsación) ---------- */
+let confirmandoBorrado = false;
+let timerBorrado = null;
+
+function reiniciarBotonBorrar() {
+    confirmandoBorrado = false;
+    clearTimeout(timerBorrado);
+    const b = byId('btn-borrar-todo');
+    b.classList.remove('confirmando');
+    b.querySelector('span').textContent = 'Borrar todas las conversaciones';
+}
+
+function pedirBorrarTodo() {
+    const b = byId('btn-borrar-todo');
+    if (!confirmandoBorrado) {
+        confirmandoBorrado = true;
+        b.classList.add('confirmando');
+        b.querySelector('span').textContent = 'Toca otra vez para confirmar';
+        timerBorrado = setTimeout(reiniciarBotonBorrar, 4000);
+        return;
+    }
+    reiniciarBotonBorrar();
+    borrarTodasLasConversaciones();
+}
+
+function borrarTodasLasConversaciones() {
+    detenerVoz();
+    if (escrituraActiva) { escrituraActiva.cancelar(); escrituraActiva = null; }
+    clearTimeout(timerGuardado);
+    timerGuardado = null;
+    listaChats = [];
+    chatActualId = null;
+    editingChatId = null;
+    openContextMenuChatId = null;
+    borrarLocal(CLAVE_CHATS);
+    crearNuevoChat();
+    actualizarPanelPrivacidad();
+    mostrarAviso('Listo: borré todas tus conversaciones de este dispositivo.');
+}
+
+/* ---------- Ajustes › Privacidad y pestañas ---------- */
+function actualizarPanelPrivacidad() {
+    byId('save-toggle').checked = guardadoActivo;
+    byId('save-confirm').hidden = true;
+    byId('save-state-text').textContent = guardadoActivo
+        ? 'Activado: tus conversaciones se guardan en este dispositivo.'
+        : 'Desactivado: no se guarda nada y el historial se pierde al cerrar o recargar la página.';
+    const n = contarGuardadas();
+    byId('save-count').textContent = !guardadoActivo ? ''
+        : n === 0 ? 'Todavía no hay conversaciones guardadas.'
+        : n + (n === 1 ? ' conversación guardada en este dispositivo.' : ' conversaciones guardadas en este dispositivo.');
+    reiniciarBotonBorrar();
+}
+
+const PESTANAS_AJUSTES = ['voz', 'privacidad'];
+
+function seleccionarPestanaAjustes(nombre) {
+    PESTANAS_AJUSTES.forEach(n => {
+        const activa = n === nombre;
+        const tab = byId('tab-' + n);
+        tab.setAttribute('aria-selected', String(activa));
+        tab.tabIndex = activa ? 0 : -1;
+        byId('panel-' + n).hidden = !activa;
+    });
+    if (nombre === 'privacidad') actualizarPanelPrivacidad();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    PESTANAS_AJUSTES.forEach(n => byId('tab-' + n).addEventListener('click', () => seleccionarPestanaAjustes(n)));
+    byId('tab-voz').parentElement.addEventListener('keydown', e => {
+        const teclas = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+        const actual = PESTANAS_AJUSTES.findIndex(n => byId('tab-' + n).getAttribute('aria-selected') === 'true');
+        let destino = null;
+        if (e.key in teclas) destino = (actual + teclas[e.key] + PESTANAS_AJUSTES.length) % PESTANAS_AJUSTES.length;
+        else if (e.key === 'Home') destino = 0;
+        else if (e.key === 'End') destino = PESTANAS_AJUSTES.length - 1;
+        if (destino === null) return;
+        e.preventDefault();
+        seleccionarPestanaAjustes(PESTANAS_AJUSTES[destino]);
+        byId('tab-' + PESTANAS_AJUSTES[destino]).focus();
+    });
+
+    byId('save-toggle').addEventListener('change', e => {
+        if (e.target.checked) { activarGuardado(); return; }
+        // Al desactivar se borra lo guardado: antes se pide confirmación si hay algo guardado
+        const hayAlgo = contarGuardadas() > 0 || !!leerLocal(CLAVE_CHATS, '');
+        if (hayAlgo) { e.target.checked = true; byId('save-confirm').hidden = false; }
+        else desactivarGuardado();
+    });
+
+    window.addEventListener('pagehide', vaciarGuardado);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') vaciarGuardado(); });
 });

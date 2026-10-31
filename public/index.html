@@ -150,12 +150,47 @@
                 <button type="button" role="tab" id="tab-voz" class="settings-tab" aria-selected="true" aria-controls="panel-voz">
                     <i class="fa-solid fa-volume-high"></i> Voz
                 </button>
+                <button type="button" role="tab" id="tab-privacidad" class="settings-tab" aria-selected="false" aria-controls="panel-privacidad" tabindex="-1">
+                    <i class="fa-solid fa-shield-halved"></i> Privacidad
+                </button>
             </nav>
             <section id="panel-voz" class="settings-panel" role="tabpanel" aria-labelledby="tab-voz">
                 <h3>Voz de Kumi</h3>
                 <p class="settings-hint">Elige cómo suena Kumi cuando tocas la bocina de un mensaje. Pulsa ▶ para escuchar una muestra.</p>
                 <div id="voice-list"></div>
                 <p id="voice-note" class="settings-note"></p>
+            </section>
+
+            <section id="panel-privacidad" class="settings-panel" role="tabpanel" aria-labelledby="tab-privacidad" hidden>
+                <h3>Privacidad y datos</h3>
+                <p class="settings-hint">Tus conversaciones son tuyas. Aquí decides si Kumi las recuerda en este dispositivo.</p>
+
+                <label class="switch-row" for="save-toggle">
+                    <span class="switch-text">
+                        <strong>Guardar conversaciones en este dispositivo</strong>
+                        <small id="save-state-text"></small>
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="save-toggle" role="switch">
+                        <span class="switch-track"></span>
+                    </span>
+                </label>
+
+                <div id="save-confirm" class="save-confirm" hidden>
+                    <p>Si lo desactivas, se borrarán las conversaciones guardadas en este dispositivo. Las que tienes abiertas ahora seguirán visibles hasta que cierres la página.</p>
+                    <div class="save-confirm-actions">
+                        <button type="button" class="offer-btn" onclick="cancelarDesactivarGuardado()">Cancelar</button>
+                        <button type="button" class="offer-btn danger" onclick="desactivarGuardado()">Desactivar y borrar</button>
+                    </div>
+                </div>
+
+                <p id="save-count" class="settings-hint"></p>
+
+                <p class="settings-note">Las conversaciones se guardan solo en este navegador, no en nuestros servidores. Cualquier persona con acceso a este dispositivo y navegador podría leerlas, así que si lo compartes, es mejor no activarlo.</p>
+
+                <button type="button" id="btn-borrar-todo" class="btn-danger-outline" onclick="pedirBorrarTodo()">
+                    <i class="fa-regular fa-trash-can"></i> <span>Borrar todas las conversaciones</span>
+                </button>
             </section>
         </div>
     </div>

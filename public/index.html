@@ -95,6 +95,9 @@
                     <button type="button" id="mic-button" class="btn-mic" onclick="toggleSpeechRecognition()" aria-label="Hablar por micrófono" title="Hablar por micrófono">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
+                    <button type="button" id="call-button" class="btn-call" onclick="iniciarLlamada()" aria-label="Llamar a Kumi" title="Llamar a Kumi (hablar por voz)">
+                        <i class="fa-solid fa-phone"></i>
+                    </button>
                     <button type="submit" id="send-button" class="btn-send" aria-label="Enviar mensaje">
                         <i class="fa-solid fa-arrow-up"></i>
                     </button>
@@ -110,6 +113,28 @@
             </p>
         </footer>
     </main>
+
+    <!-- Llamada de voz con Kumi -->
+    <div id="call-screen" class="call-screen" role="dialog" aria-modal="true" aria-label="Llamada con Kumi" data-estado="conectando">
+        <div class="call-stage">
+            <div id="call-orb" class="call-orb">
+                <div class="led-bloom"></div>
+                <div class="led-halo"></div>
+                <div class="led-ring"></div>
+                <div class="led-spin"></div>
+                <button type="button" id="call-logo" class="call-logo" onclick="tocarOrbeLlamada()" aria-label="Kumi">K</button>
+            </div>
+            <p id="call-status" class="call-status" aria-live="polite">Conectando…</p>
+        </div>
+        <div class="call-actions">
+            <button type="button" id="call-end" class="call-end" onclick="terminarLlamada()" aria-label="Terminar llamada">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
+            <span class="call-end-label">Terminar llamada</span>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <!-- Ventana de ajustes -->
     <div id="settings-overlay" class="settings-overlay" onclick="cerrarAjustes()"></div>

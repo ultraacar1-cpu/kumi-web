@@ -544,12 +544,7 @@ async function enviarEntrada(event) {
     mainApp.classList.remove('state-welcome');
     mainApp.classList.add('state-chat');
 
-    // Primer mensaje del chat: título provisional al instante y, en paralelo, un resumen hecho por la IA
-    if (chatObj.historial.length === 0 && !chatObj.tituloManual) {
-        chatObj.titulo = resumirLocal(texto);
-        if (chatActualId === chatObj.id) ponerTituloHeader(chatObj.titulo, false);
-        solicitarTituloIA(chatObj, texto);
-    }
+    iniciarTituloSiEsPrimero(chatObj, texto);
 
     agregarBloqueUI('user', texto);
     chatObj.historial.push({ role: 'user', content: texto });
@@ -915,6 +910,16 @@ function resumirLocal(texto) {
     return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+// Primer mensaje del chat: título provisional al instante y, en paralelo, un resumen hecho por la IA.
+// Debe llamarse ANTES de guardar el mensaje en el historial.
+function iniciarTituloSiEsPrimero(chatObj, texto) {
+    if (chatObj.historial.length === 0 && !chatObj.tituloManual) {
+        chatObj.titulo = resumirLocal(texto);
+        if (chatActualId === chatObj.id) ponerTituloHeader(chatObj.titulo, false);
+        solicitarTituloIA(chatObj, texto);
+    }
+}
+
 // Pide a la IA un resumen corto del primer mensaje. Si falla, se queda el título provisional.
 async function solicitarTituloIA(chatObj, texto) {
     try {
@@ -942,7 +947,7 @@ async function solicitarTituloIA(chatObj, texto) {
 // Por eso Kumi define 6 "perfiles" y cada dispositivo asigna a cada perfil la mejor voz en español que tenga
 // del género correspondiente, ajustando tono y velocidad. El perfil predeterminado es siempre el mismo.
 const PERFILES_VOZ = [
-    { id: 'f-alegre',  nombre: 'Aurora', genero: 'f', desc: 'Alegre y cercana',      pitch: 1.12, rate: 1.06 },
+    { id: 'f-alegre',  nombre: 'Aurora', genero: 'f', desc: 'Joven y enérgica',      pitch: 1.18, rate: 1.14 },
     { id: 'f-calida',  nombre: 'Luna',   genero: 'f', desc: 'Cálida y tranquila',    pitch: 1.0,  rate: 0.97 },
     { id: 'f-suave',   nombre: 'Alba',   genero: 'f', desc: 'Suave y serena',        pitch: 1.04, rate: 0.9 },
     { id: 'm-amable',  nombre: 'Leo',    genero: 'm', desc: 'Amable y cercano',      pitch: 1.0,  rate: 1.02 },
@@ -1041,14 +1046,24 @@ function dividirEnTrozos(texto, max = 180) {
     return trozos;
 }
 
-function hablar(texto, boton, perfilId = perfilVozId) {
-    if (!('speechSynthesis' in window)) {
-        alert('Lo siento, tu navegador no soporta la síntesis de voz.');
-        return;
-    }
-    // Segunda pulsación sobre el mismo botón = detener (antes reiniciaba la lectura y el botón quedaba gris)
-    if (botonVozActivo === boton) { detenerVoz(); return; }
-    detenerVoz();
+// Prepara el texto para leerlo en voz alta: sin markdown, sin emojis y con los números de ayuda dichos dígito a dígito
+function paraVoz(texto) {
+    return texto
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\*\*/g, '')
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        .replace(/\b123\b/g, 'uno dos tres')
+        .replace(/\b106\b/g, 'uno cero seis')
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+}
+
+// Núcleo de la síntesis de voz (lo usan la bocina de los mensajes, las muestras y la llamada).
+// callbacks: onPalabra() en cada palabra (si el navegador lo informa) y onFin() al terminar o fallar.
+// Devuelve true si empezó a leer.
+function reproducirTexto(texto, perfilId, cb = {}) {
+    if (!('speechSynthesis' in window)) return false;
 
     if (vocesSistema.length === 0) cargarVoces();
     const perfil = PERFILES_VOZ.find(p => p.id === perfilId) || PERFILES_VOZ[0];
@@ -1057,19 +1072,13 @@ function hablar(texto, boton, perfilId = perfilVozId) {
     if (!exacta) tono = perfil.genero === 'm' ? tono * 0.8 : tono * 1.2;    // sin voz de ese género: se imita con el tono
     tono = Math.min(1.8, Math.max(0.5, tono));
 
-    const trozos = dividirEnTrozos(texto.replace(/\*\*/g, '').replace(/<[^>]*>/g, ''));
-    if (trozos.length === 0) return;
+    const trozos = dividirEnTrozos(paraVoz(texto));
+    if (trozos.length === 0) return false;
 
     const miSesion = ++sesionVoz;
-    botonVozActivo = boton;
-    boton.classList.add('speaking');
-    boton.setAttribute('aria-pressed', 'true');
-
     const terminar = () => {
         if (miSesion !== sesionVoz) return;           // aviso tardío de una lectura que ya se detuvo: se ignora
-        boton.classList.remove('speaking');
-        boton.setAttribute('aria-pressed', 'false');
-        if (botonVozActivo === boton) botonVozActivo = null;
+        if (cb.onFin) cb.onFin();
     };
     let i = 0;
     const siguiente = () => {
@@ -1080,11 +1089,36 @@ function hablar(texto, boton, perfilId = perfilVozId) {
         if (voz) u.voice = voz;
         u.pitch = tono;
         u.rate = perfil.rate;
+        u.onboundary = e => {
+            if (miSesion !== sesionVoz || !cb.onPalabra) return;
+            if (!e || !e.name || e.name === 'word') cb.onPalabra(e);
+        };
         u.onend = siguiente;
         u.onerror = terminar;
         window.speechSynthesis.speak(u);
     };
     setTimeout(siguiente, 60);    // pausa mínima tras cancelar(): algunos navegadores "se tragan" el primer enunciado si no
+    return true;
+}
+
+// Bocina de un mensaje: una pulsación lee, la siguiente detiene
+function hablar(texto, boton, perfilId = perfilVozId) {
+    if (!('speechSynthesis' in window)) {
+        alert('Lo siento, tu navegador no soporta la síntesis de voz.');
+        return;
+    }
+    if (botonVozActivo === boton) { detenerVoz(); return; }
+    detenerVoz();
+
+    const liberar = () => {
+        boton.classList.remove('speaking');
+        boton.setAttribute('aria-pressed', 'false');
+        if (botonVozActivo === boton) botonVozActivo = null;
+    };
+    botonVozActivo = boton;
+    boton.classList.add('speaking');
+    boton.setAttribute('aria-pressed', 'true');
+    if (!reproducirTexto(texto, perfilId, { onFin: liberar })) liberar();
 }
 
 function leerTexto(texto, botonElement) { hablar(texto, botonElement); }
@@ -1227,5 +1261,290 @@ window.addEventListener('DOMContentLoaded', () => {
             if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
             else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
         }
+    });
+});
+
+
+/* ================================================================
+   Llamada de voz con Kumi
+   ================================================================
+   Ciclo: Kumi saluda -> escucha ("Te escucho") -> la persona habla -> "Kumi está pensando" ->
+   Kumi responde en voz alta ("Kumi está hablando") -> vuelve a escuchar. El micrófono se apaga mientras
+   Kumi habla, para que no se escuche a sí misma. Todo lo hablado queda en el chat de la conversación. */
+const SALUDOS_LLAMADA = ['Hola, soy Kumi. Te escucho.', 'Hola, aquí estoy. ¿Qué tienes en mente?', 'Hola. Cuéntame, te escucho.'];
+const SILENCIOS_PARA_PREGUNTAR = 5;   // ciclos de escucha sin voz (≈ 30 s) antes de preguntar "¿sigues ahí?"
+const SILENCIOS_PARA_COLGAR = 14;     // ≈ 90 s sin hablar: la llamada se corta sola (el micrófono no queda abierto para siempre)
+const TEXTOS_ESTADO = {
+    conectando: 'Conectando…',
+    escuchando: 'Te escucho…',
+    pensando: 'Kumi está pensando…',
+    hablando: 'Kumi está hablando…',
+    toque: 'Toca el círculo para hablar'
+};
+
+let llamada = null;               // null = no hay llamada en curso
+let focoAntesDeLlamada = null;
+let timerAviso = null;
+
+function mostrarAviso(texto, ms = 4500) {
+    const t = byId('toast');
+    t.textContent = texto;
+    t.classList.add('show');
+    clearTimeout(timerAviso);
+    timerAviso = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function setEstadoLlamada(estado) {
+    if (!llamada) return;
+    llamada.estado = estado;
+    byId('call-screen').dataset.estado = estado;
+    byId('call-status').textContent = TEXTOS_ESTADO[estado] || '';
+    byId('call-logo').setAttribute('aria-label',
+        estado === 'hablando' ? 'Interrumpir a Kumi' : estado === 'toque' ? 'Hablar con Kumi' : 'Kumi');
+}
+
+function iniciarLlamada() {
+    if (llamada) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { mostrarAviso('Tu navegador no admite llamadas de voz. Prueba con Chrome, Edge o Safari.'); return; }
+    if (isProcessing) { mostrarAviso('Espera un momento: Kumi todavía está respondiendo.'); return; }
+    const chatObj = listaChats.find(c => c.id === chatActualId);
+    if (!chatObj) return;
+
+    // Se cierra todo lo que use el audio o el micrófono
+    if (isListening && recognition) { try { recognition.stop(); } catch { /* ya estaba detenido */ } }
+    detenerVoz();
+    if (escrituraActiva) escrituraActiva.completar();
+    cerrarAjustes();
+    if (window.innerWidth <= 768 && byId('sidebar').classList.contains('open')) toggleSidebar();
+
+    focoAntesDeLlamada = document.activeElement;
+    llamada = {
+        chatId: chatObj.id, estado: 'conectando', rec: null, abortCtl: null, escuchaId: 0,
+        silencios: 0, preguntado: false, escuchoAlguna: false,
+        nivel: 0, impulso: 0, ultimaPalabra: 0, boostUsuario: 0, raf: null, tUlt: 0
+    };
+    byId('call-screen').classList.add('open');
+    setEstadoLlamada('conectando');
+    byId('call-end').focus();
+    llamada.raf = requestAnimationFrame(animarLlamada);
+
+    // El saludo ocurre dentro del toque del usuario, lo que además "desbloquea" el audio en iPhone
+    hablarEnLlamada(SALUDOS_LLAMADA[Math.floor(Math.random() * SALUDOS_LLAMADA.length)]);
+}
+
+function hablarEnLlamada(texto, despues = escucharLlamada) {
+    const l = llamada;
+    if (!l) return;
+    setEstadoLlamada('hablando');
+    const empezo = reproducirTexto(texto, perfilVozId, {
+        onPalabra: () => { if (llamada === l) { l.impulso = 1; l.ultimaPalabra = performance.now(); } },
+        onFin: () => {
+            // Una pausa corta antes de abrir el micrófono evita captar la cola del propio audio
+            setTimeout(() => { if (llamada === l && l.estado === 'hablando') despues(); }, 350);
+        }
+    });
+    if (!empezo) despues();      // este navegador no puede hablar: la llamada sigue solo con la pantalla
+}
+
+function escucharLlamada() {
+    const l = llamada;
+    if (!l) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setEstadoLlamada('escuchando');
+
+    const miId = ++l.escuchaId;
+    const rec = new SR();
+    rec.lang = 'es-CO';
+    rec.interimResults = true;
+    rec.continuous = false;       // termina solo cuando la persona deja de hablar: así se turnan
+    rec.maxAlternatives = 1;
+    l.rec = rec;
+
+    let textoFinal = '';
+    let conError = false;
+    const vigente = () => llamada === l && miId === l.escuchaId;
+
+    rec.onstart = () => { if (vigente()) l.escuchoAlguna = true; };
+    rec.onresult = e => {
+        if (!vigente()) return;
+        l.boostUsuario = 1;       // la luz reacciona suavemente cuando la persona habla
+        l.silencios = 0;
+        l.preguntado = false;
+        textoFinal = Array.from(e.results).filter(r => r.isFinal).map(r => r[0].transcript).join(' ');
+    };
+    rec.onerror = e => {
+        if (!vigente()) return;
+        conError = true;
+        manejarErrorEscucha(l, e.error);
+    };
+    rec.onend = () => {
+        if (!vigente()) return;
+        l.rec = null;
+        if (conError) return;
+        const texto = textoFinal.trim();
+        if (texto) procesarTurnoLlamada(texto);
+        else reintentarEscucha(l);
+    };
+
+    try { rec.start(); }
+    catch { setTimeout(() => { if (vigente()) reintentarEscucha(l); }, 400); }
+}
+
+function manejarErrorEscucha(l, codigo) {
+    switch (codigo) {
+        case 'not-allowed':
+        case 'service-not-allowed':
+            // Si ya había funcionado antes, el navegador pide un toque para volver a abrir el micrófono (iPhone)
+            if (l.escuchoAlguna) setEstadoLlamada('toque');
+            else terminarLlamada('Necesito permiso para usar el micrófono. Actívalo en tu navegador e inténtalo de nuevo.');
+            break;
+        case 'audio-capture':
+            terminarLlamada('No encuentro un micrófono disponible.');
+            break;
+        case 'network':
+            terminarLlamada('No pude conectarme al servicio de voz de tu navegador. Revisa tu conexión.');
+            break;
+        default:                       // 'no-speech', 'aborted', etc.: simplemente se vuelve a escuchar
+            reintentarEscucha(l);
+    }
+}
+
+function reintentarEscucha(l) {
+    if (llamada !== l) return;
+    l.silencios++;
+    if (l.silencios >= SILENCIOS_PARA_COLGAR) {
+        terminarLlamada('La llamada terminó porque no te escuché por un rato.');
+        return;
+    }
+    if (l.silencios === SILENCIOS_PARA_PREGUNTAR && !l.preguntado) {
+        l.preguntado = true;
+        hablarEnLlamada('¿Sigues ahí? Te escucho cuando quieras.');
+        return;
+    }
+    setTimeout(() => { if (llamada === l && l.estado === 'escuchando') escucharLlamada(); }, 300);
+}
+
+async function procesarTurnoLlamada(texto) {
+    const l = llamada;
+    if (!l) return;
+    const chatObj = listaChats.find(c => c.id === l.chatId);
+    if (!chatObj) { terminarLlamada(); return; }
+
+    setEstadoLlamada('pensando');
+    l.silencios = 0;
+
+    // Lo hablado también se guarda en el chat de fondo (se verá al volver de la llamada)
+    const main = byId('main-app');
+    main.classList.remove('state-welcome');
+    main.classList.add('state-chat');
+    iniciarTituloSiEsPrimero(chatObj, texto);
+    agregarBloqueUI('user', texto, true, { animar: false });
+    chatObj.historial.push({ role: 'user', content: texto });
+    renderizarListaChats();
+
+    l.abortCtl = new AbortController();
+    let respuesta = null;
+    let mensajeError = null;
+    try {
+        const r = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: chatObj.historial, modo: 'llamada' }),
+            signal: l.abortCtl.signal
+        });
+        let data = {};
+        try { data = await r.json(); } catch { /* sin JSON */ }
+        if (r.ok && typeof data.reply === 'string' && data.reply.trim()) respuesta = data.reply.trim();
+        else if (r.status === 429) mensajeError = 'Vas muy rápido. Dame un momento y vuelve a intentarlo.';
+        else mensajeError = 'Tuve un problema técnico. ¿Puedes repetirlo?';
+    } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        mensajeError = 'Se cortó la conexión un momento. ¿Puedes repetirlo?';
+    }
+    if (llamada !== l) return;       // la llamada terminó mientras esperábamos
+
+    if (respuesta) {
+        chatObj.historial.push({ role: 'assistant', content: respuesta });
+        agregarBloqueUI('kumi', respuesta, true, { animar: false });
+        hablarEnLlamada(respuesta);
+    } else {
+        hablarEnLlamada(mensajeError);   // los errores no se guardan en el historial
+    }
+}
+
+// Tocar el círculo mientras Kumi habla la interrumpe; en modo "toque" abre el micrófono
+function tocarOrbeLlamada() {
+    const l = llamada;
+    if (!l) return;
+    if (l.estado === 'hablando') {
+        detenerVoz();
+        l.silencios = 0;
+        escucharLlamada();
+    } else if (l.estado === 'toque') {
+        escucharLlamada();
+    }
+}
+
+function terminarLlamada(motivo) {
+    const l = llamada;
+    if (!l) return;
+    llamada = null;
+    l.escuchaId++;                                   // ignora cualquier aviso tardío del reconocimiento de voz
+    try { if (l.rec) l.rec.abort(); } catch { /* ya estaba cerrado */ }
+    if (l.abortCtl) l.abortCtl.abort();
+    detenerVoz();
+    cancelAnimationFrame(l.raf);
+
+    byId('call-screen').classList.remove('open');
+    setTimeout(() => { if (!llamada) byId('call-orb').style.setProperty('--nivel', '0'); }, 600);
+    if (motivo) mostrarAviso(motivo);
+
+    // De vuelta al chat, con lo hablado en la llamada ya escrito
+    const chatObj = listaChats.find(c => c.id === l.chatId);
+    if (chatObj && chatObj.historial.length > 0 && chatActualId === chatObj.id) {
+        const main = byId('main-app');
+        main.classList.remove('state-welcome');
+        main.classList.add('state-chat');
+        const cont = byId('session-container');
+        cont.scrollTop = cont.scrollHeight;
+    }
+    if (focoAntesDeLlamada && focoAntesDeLlamada.focus) focoAntesDeLlamada.focus();
+}
+
+/* ---------- Animación de la luz LED ----------
+   Cada frame calcula "nivel" (0 a 1) y se lo pasa al CSS. Mientras Kumi habla, cada palabra enciende la luz y
+   luego se difumina; si el navegador no avisa de las palabras, se usa un ritmo orgánico equivalente.
+   Sube rápido y baja despacio, así la luz "respira" con la voz. */
+function animarLlamada(t) {
+    const l = llamada;
+    if (!l) return;
+    const dt = Math.min(0.05, (t - (l.tUlt || t)) / 1000);
+    l.tUlt = t;
+    l.impulso *= Math.exp(-dt * 9);          // cada palabra enciende la luz y se difumina en ~0,3 s
+    l.boostUsuario *= Math.exp(-dt * 3);
+
+    let objetivo;
+    if (l.estado === 'hablando') {
+        const hayPalabras = t - l.ultimaPalabra < 600;
+        const ruido = (Math.sin(t / 130) + Math.sin(t / 77 + 1.7) + Math.sin(t / 301 + 0.4)) / 6 + 0.5;
+        objetivo = 0.20 + 1.05 * (hayPalabras ? l.impulso : ruido);
+    } else if (l.estado === 'pensando') {
+        objetivo = 0.28 + 0.05 * Math.sin(t / 240);
+    } else if (l.estado === 'escuchando') {
+        objetivo = 0.10 + 0.06 * Math.sin(t / 650) + 0.45 * l.boostUsuario;
+    } else {
+        objetivo = 0.12;
+    }
+    // Sube muy rápido; baja rápido entre palabras y mucho más despacio al terminar de hablar (se "difumina")
+    const velocidad = objetivo > l.nivel ? 45 : (l.estado === 'hablando' ? 10 : 3.5);
+    l.nivel += (objetivo - l.nivel) * (1 - Math.exp(-dt * velocidad));
+    byId('call-orb').style.setProperty('--nivel', Math.min(1, Math.max(0, l.nivel)).toFixed(3));
+    l.raf = requestAnimationFrame(animarLlamada);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && llamada) { e.preventDefault(); terminarLlamada(); }
     });
 });

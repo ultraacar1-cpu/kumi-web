@@ -259,7 +259,7 @@
             transition: opacity 0.2s, color 0.2s;
         }
         /* Solo gira el ícono: el botón (y cualquier fondo) se queda quieto */
-        .btn-chat-config i { display: block; transition: transform 0.2s; }
+        .btn-chat-config i { display: block; }
         .btn-chat-config:focus { outline: none; }
         .btn-chat-config:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
         .chat-history-item:hover .btn-chat-config,
@@ -267,7 +267,6 @@
             opacity: 1;
         }
         .btn-chat-config:hover { color: var(--text-primary); }
-        .btn-chat-config:hover i { transform: rotate(30deg); }
 
         /* Menú Contextual Desplegable */
         .chat-context-menu {
@@ -811,9 +810,8 @@ main.state-chat .logo-float { animation: none; }
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s;
 }
-.btn-settings i { color: var(--text-muted); width: 16px; text-align: center; transition: transform 0.35s ease; }
+.btn-settings i { color: var(--text-muted); width: 16px; text-align: center; }
 .btn-settings:hover { background-color: var(--chat-item-hover); }
-.btn-settings:hover i { transform: rotate(40deg); }
 .btn-settings:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
 
 /* ---------- Ventana de ajustes ---------- */
@@ -915,3 +913,144 @@ main.state-chat .logo-float { animation: none; }
     .settings-panel { padding: 16px 16px 20px; }
     .voice-device { display: none; }
 }
+
+
+/* ================================================================
+   Llamada de voz
+   ================================================================ */
+
+/* Botón de teléfono (junto al micrófono) */
+.btn-call {
+    background: transparent; border: none;
+    color: var(--text-muted);
+    width: 38px; height: 38px; border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-call:hover { background: var(--chat-item-hover); color: var(--kumi-accent); }
+.btn-call:focus-visible { outline: 2px solid var(--focus-border); outline-offset: 2px; }
+
+/* Color de la luz LED: verde en modo claro, azul en modo oscuro. El anillo es siempre blanco. */
+:root { --led: #10b981; --ring-a: #ffffff; --ring-b: #fbfcfe; --ring-c: #eef2f7; }
+[data-theme="dark"] { --led: #38bdf8; --ring-a: #ffffff; --ring-b: #f3f6fa; --ring-c: #d5deea; }
+
+.call-screen {
+    --orb: min(66vw, 44vh, 300px);
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: max(28px, env(safe-area-inset-top)) 24px max(36px, env(safe-area-inset-bottom));
+    background: var(--bg-canvas);
+    overflow: hidden;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.45s ease, visibility 0.45s;
+}
+.call-screen.open { opacity: 1; visibility: visible; }
+.call-stage { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(28px, 6vh, 56px); }
+
+/* --nivel (0 a 1) lo actualiza JavaScript en cada frame: sube cuando Kumi habla y se difumina al callar */
+.call-orb {
+    --nivel: 0;
+    position: relative;
+    width: var(--orb); height: var(--orb);
+    display: grid; place-items: center;
+    transform: scale(0.86); opacity: 0;
+    transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.5s ease;
+}
+.call-screen.open .call-orb { transform: scale(1); opacity: 1; }
+.call-orb > div { position: absolute; border-radius: 50%; pointer-events: none; }
+
+/* Resplandor amplio (el "bloom" de la luz sobre el entorno) */
+.led-bloom {
+    inset: -45%;
+    background: radial-gradient(circle,
+        color-mix(in srgb, var(--led) 78%, transparent) 0%,
+        color-mix(in srgb, var(--led) 30%, transparent) 40%,
+        transparent 68%);
+    opacity: calc(0.10 + 0.62 * var(--nivel));
+    transform: scale(calc(0.80 + 0.32 * var(--nivel)));
+    will-change: transform, opacity;
+}
+/* Halo ceñido al anillo */
+.led-halo {
+    inset: -6%;
+    background: var(--led);
+    filter: blur(16px);
+    opacity: calc(0.26 + 0.62 * var(--nivel));
+    transform: scale(calc(1 + 0.05 * var(--nivel)));
+    will-change: transform, opacity;
+}
+/* El círculo blanco, con borde de neón y relieve */
+.led-ring {
+    inset: 0;
+    background: radial-gradient(circle at 50% 28%, var(--ring-a) 0%, var(--ring-b) 55%, var(--ring-c) 100%);
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--led) calc(30% + 70% * var(--nivel)), var(--ring-a)),
+        0 0 calc(12px + 30px * var(--nivel)) calc(1px + 4px * var(--nivel)) color-mix(in srgb, var(--led) calc(25% + 65% * var(--nivel)), transparent),
+        inset 0 3px 8px rgba(255, 255, 255, 0.9),
+        inset 0 -12px 22px rgba(15, 23, 42, 0.07);
+}
+/* Destello giratorio mientras Kumi "piensa" */
+.led-spin {
+    inset: -5px;
+    background: conic-gradient(from 0deg, transparent 0deg 235deg, var(--led) 320deg, #ffffff 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: ledSpin 1.25s linear infinite;
+    animation-play-state: paused;
+}
+.call-screen[data-estado="pensando"] .led-spin { opacity: 1; animation-play-state: running; }
+@keyframes ledSpin { to { transform: rotate(360deg); } }
+
+/* El logo, ahora circular y con su propio contorno */
+.call-logo {
+    position: relative;
+    width: 76%; aspect-ratio: 1;
+    border-radius: 50%;
+    border: 4px solid color-mix(in srgb, var(--led) 55%, #ffffff);
+    background: var(--btn-bg);
+    color: #fff;
+    font-family: inherit; font-weight: 700;
+    font-size: calc(var(--orb) * 0.27);
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+    box-shadow: inset 0 4px 12px rgba(255, 255, 255, 0.35), inset 0 -10px 22px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.22);
+    transform: scale(calc(1 + 0.035 * var(--nivel)));
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.call-screen[data-estado="hablando"] .call-logo,
+.call-screen[data-estado="toque"] .call-logo { cursor: pointer; }
+.call-logo:focus-visible { outline: 3px solid var(--focus-border); outline-offset: 6px; }
+
+.call-status { min-height: 1.6em; font-size: 15px; font-weight: 500; letter-spacing: 0.2px; color: var(--text-secondary); text-align: center; }
+
+.call-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.call-end {
+    width: 68px; height: 68px; border-radius: 50%;
+    border: none; background: #ef4444; color: #fff;
+    font-size: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.call-end:hover { transform: scale(1.07); background: #dc2626; box-shadow: 0 10px 28px rgba(239, 68, 68, 0.55); }
+.call-end:active { transform: scale(0.95); }
+.call-end:focus-visible { outline: 3px solid var(--focus-border); outline-offset: 4px; }
+.call-end-label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+
+/* Aviso breve (errores de la llamada, etc.) */
+.toast {
+    position: fixed; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); z-index: 700;
+    max-width: min(92vw, 460px);
+    padding: 12px 18px;
+    background: var(--text-primary); color: var(--bg-card);
+    border-radius: 12px; font-size: 13.5px; line-height: 1.4; text-align: center;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    opacity: 0; visibility: hidden; transform: translate(-50%, 16px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+.toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }

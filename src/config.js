@@ -17,5 +17,9 @@ module.exports = {
     // Títulos automáticos de las conversaciones
     TITULO_MAX_TOKENS: 800,      // alto a propósito: el modelo "piensa" antes de responder y eso también cuenta
     TITULO_TIMEOUT_MS: 12000,
-    TITULO_RATE_MAX: 10          // por minuto y por IP
+    TITULO_RATE_MAX: 10,         // por minuto y por IP
+    // Llamadas de voz: respuestas cortas y rápidas
+    LLAMADA_MAX_TOKENS: 900,     // incluye los "tokens de pensamiento" del modelo
+    LLAMADA_TEMPERATURE: 0.7,
+    LLAMADA_REASONING: 'low'     // gpt-oss admite 'low' | 'medium' | 'high': 'low' responde bastante más rápido
 };

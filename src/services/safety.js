@@ -68,11 +68,20 @@ const RESPUESTA_RIESGO_FIJA =
 
 ${BLOQUE_AYUDA}`;
 
+// Versión para la llamada: texto plano y breve, pensado para leerse en voz alta
+const BLOQUE_AYUDA_VOZ =
+`Si estás en peligro o piensas hacerte daño ahora mismo, llama al 123. Si necesitas hablar con alguien, la Línea 106 es gratuita y atiende las 24 horas.`;
+
+const RESPUESTA_RIESGO_FIJA_VOZ =
+`Lo que me cuentas es muy importante y me preocupa cómo estás. Ahora tuve un problema técnico, pero no quiero que te quedes sin apoyo. ${BLOQUE_AYUDA_VOZ}`;
+
 module.exports = {
     hayRiesgo,
     evaluarRiesgo,
     NOTA_RIESGO_ACTUAL,
     NOTA_RIESGO_RECIENTE,
     BLOQUE_AYUDA,
-    RESPUESTA_RIESGO_FIJA
+    RESPUESTA_RIESGO_FIJA,
+    BLOQUE_AYUDA_VOZ,
+    RESPUESTA_RIESGO_FIJA_VOZ
 };

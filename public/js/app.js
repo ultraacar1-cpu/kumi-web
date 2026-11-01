@@ -81,7 +81,14 @@ function toggleTheme() {
     timerTema = setTimeout(() => html.classList.remove('theme-switching'), 650);
 }
 
+// El ícono de la pestaña también cambia con el tema: verde en modo claro, azul en modo oscuro
+function actualizarFavicon(theme) {
+    const enlace = byId('favicon-svg');
+    if (enlace) enlace.setAttribute('href', theme === 'dark' ? '/img/kumi-icon-oscuro.svg' : '/img/kumi-icon-claro.svg');
+}
+
 function actualizarIconoTema(theme, animar = false) {
+    actualizarFavicon(theme);
     const icono = byId('theme-icon');
     icono.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     if (animar && !reducirMovimiento()) {

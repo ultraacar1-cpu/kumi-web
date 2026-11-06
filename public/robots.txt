@@ -1,2 +1,6 @@
+# Permitir que todos los robots de búsqueda (como Google) rastreen todo el sitio
 User-agent: *
 Allow: /
+
+# Opcional: Si tienes un sitemap, puedes poner la URL aquí abajo
+# Sitemap: https://onrender.com
